@@ -19,10 +19,13 @@ dictionary = RiDictionary(path)
 (X, Y) = PL.load_dataset()
 
 # Build network
-input_var = T.tensor4('input')
+contexts = T.tensor3('contexts')
+theta_ixs = T.ivector('theta_idx')
+idx = T.ivector('idx')
+
 target_var = T.ivector('targets')
 
-l_in = lasagne.layers.InputLayer((batchsize,2*k,d,None), input_var)
+l_in = lasagne.layers.InputLayer((2*k,d,None), input_var)
 l_ri = AttentionRILayer(l_in, (1,d,2*k), parameter_mode="const")
 l_hid = lasagne.layers.DenseLayer(l_in, num_units=120, nonlinearity=lasagne.nonlinearities.rectify)
 l_out = lasagne.layers.DenseLayer(l_hid, num_units=PL.num_classes(), nonlinearity=lasagne.nonlinearities.softmax)
@@ -45,3 +48,21 @@ def iterate_minibatches(inputs, targets, batchsize, shuffle=True):
 prediction = lasagne.layers.get_output(l_out)
 loss = lasagne.objectives.binary_crossentropy(prediction, target_var) # logistic regression
 loss = loss.mean()
+
+
+thetas = T.matrix()
+th_idxs = T.ivector()
+ctxs = T.tensor3()
+i = T.ivector()
+
+thetas_v = np.ones((1,2)) # just one theta, window size 1+1
+ctxs_v = np.ones((2, 10, 15)) # 10 words in sentence/doc
+th_idx_v = np.zeros(15, dtype="int32")
+
+def calc_scalar_prod(i):
+    return T.dot(thetas[th_idxs[i],:],ctxs[:, :, i])
+
+results, updates = theano.scan(calc_scalar_prod, i)
+f = theano.function(inputs=[thetas, th_idxs, ctxs, i], outputs=[results])
+
+f(thetas_v, th_idx_v, ctxs_v, np.arange(15))

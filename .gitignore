@@ -1,5 +1,7 @@
 # custom
 .idea/
+*.pyproj
+*.v12.suo
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

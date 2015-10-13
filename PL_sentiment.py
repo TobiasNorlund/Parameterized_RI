@@ -23,7 +23,7 @@ def load_dataset():
     def load_file(f, y):
         i = 0
         for line in f:
-            #if i > 200: break
+            #if i > 100: break
             X.append(line.rstrip('\n'))
             Y.append(y)
             i += 1

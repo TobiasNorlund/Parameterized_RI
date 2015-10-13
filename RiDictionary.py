@@ -17,13 +17,19 @@ class RiDictionary(object):
 
         self.f_ctx = open(path + ".context.bin", mode="rb")
 
+        self.word_map = {}
+
     def get_context(self, word):
 
-        idx = self.lines.find(word + " ")
-        if idx != -1:
-            idx = self.lines.count(" ", 0, idx)
-            self.f_ctx.seek(idx * self.d * 2*self.k * np.dtype('float32').itemsize)
-            ctx = np.fromstring(self.f_ctx.read(self.binary_len*2*self.k), dtype='float32')
-            return np.reshape(ctx, newshape=( 2*self.k, self.d) )
-        else:
-            return None
+        if word not in self.word_map:
+
+            idx = self.lines.find(word + " ")
+            if idx != -1:
+                idx = self.lines.count(" ", 0, idx)
+                self.f_ctx.seek(idx * self.d * 2*self.k * np.dtype('float32').itemsize)
+                ctx = np.fromstring(self.f_ctx.read(self.binary_len*2*self.k), dtype='float32')
+                self.word_map[word] = np.reshape(ctx, newshape=( 2*self.k, self.d) )
+            else:
+                self.word_map[word] = None
+
+        return self.word_map[word]

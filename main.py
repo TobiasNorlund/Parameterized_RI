@@ -2,8 +2,10 @@ import numpy as np
 import theano
 import lasagne
 import theano.tensor as T
+import time
 from AttentionRILayer import AttentionRILayer
 from RiDictionary import RiDictionary
+from sklearn.cross_validation import train_test_split
 
 import PL_sentiment as PL
 
@@ -16,53 +18,101 @@ path = "/media/tobiasnorlund/ac861917-9ad7-4905-93e9-ee6ab16360ad/bigdata/Dump/W
 dictionary = RiDictionary(path)
 
 # Load a dataset to train and validate on
-(X, Y) = PL.load_dataset()
+(input_docs, Y) = PL.load_dataset()
+(input_docs_train, input_docs_test, Y_train, Y_test) = train_test_split(input_docs, Y, test_size=0.33, random_state=42)
 
 # Build network
-contexts = T.tensor3('contexts')
-theta_ixs = T.ivector('theta_idx')
+contexts = T.ftensor3('contexts')
+theta_idxs = T.ivector('theta_idxs')
 idx = T.ivector('idx')
 
-target_var = T.ivector('targets')
+target_var = T.iscalar('targets')
 
-l_in = lasagne.layers.InputLayer((2*k,d,None), input_var)
-l_ri = AttentionRILayer(l_in, (1,d,2*k), parameter_mode="const")
-l_hid = lasagne.layers.DenseLayer(l_in, num_units=120, nonlinearity=lasagne.nonlinearities.rectify)
-l_out = lasagne.layers.DenseLayer(l_hid, num_units=PL.num_classes(), nonlinearity=lasagne.nonlinearities.softmax)
-
-# Helper function for iterating mini batches
-def iterate_minibatches(inputs, targets, batchsize, shuffle=True):
-    assert len(inputs) == len(targets)
-    if shuffle:
-        indices = np.arange(len(inputs))
-        np.random.shuffle(indices)
-    for start_idx in range(0, len(inputs) - batchsize + 1, batchsize):
-        if shuffle:
-            excerpt = indices[start_idx:start_idx + batchsize]
-        else:
-            excerpt = slice(start_idx, start_idx + batchsize)
-        yield inputs[excerpt], targets[excerpt]
+l_in = lasagne.layers.InputLayer((2*k,d,None), contexts)
+l_ri = AttentionRILayer(l_in, theta_idxs, idx, k, "AttentionLayer", theta_const=True, num_thetas=1)
+l_hid = lasagne.layers.DenseLayer(l_ri, num_units=120, nonlinearity=lasagne.nonlinearities.sigmoid)
+l_out = lasagne.layers.DenseLayer(l_hid, num_units=PL.num_classes(), nonlinearity=lasagne.nonlinearities.sigmoid)
 
 # Create a loss expression for training, i.e., a scalar objective we want
 # to minimize (for our multi-class problem, it is the cross-entropy loss):
 prediction = lasagne.layers.get_output(l_out)
-loss = lasagne.objectives.binary_crossentropy(prediction, target_var) # logistic regression
+prediction = theano.printing.Print('prediction out: ')(prediction)
+loss = lasagne.objectives.binary_crossentropy(prediction, target_var)
+loss = theano.printing.Print('bin_cross out: ')(loss)
 loss = loss.mean()
 
+# Create update expressions for training, i.e., how to modify the
+# parameters at each training step. Here, we'll use Stochastic Gradient
+# Descent (SGD) with Nesterov momentum, but Lasagne offers plenty more.
+params = lasagne.layers.get_all_params(l_out, trainable=True)
+updates = lasagne.updates.nesterov_momentum(
+        loss, params, learning_rate=0.02, momentum=0.9)
 
-thetas = T.matrix()
-th_idxs = T.ivector()
-ctxs = T.tensor3()
-i = T.ivector()
+# Create an expression for the classification accuracy:
+test_acc = T.mean(T.eq(T.round(prediction), target_var),
+                  dtype=theano.config.floatX)
 
-thetas_v = np.ones((1,2)) # just one theta, window size 1+1
-ctxs_v = np.ones((2, 10, 15)) # 10 words in sentence/doc
-th_idx_v = np.zeros(15, dtype="int32")
+# Compile a function performing a training step on a mini-batch (by giving
+# the updates dictionary) and returning the corresponding training loss:
+train_fn = theano.function([contexts, theta_idxs, idx, target_var], [loss, test_acc], updates=updates)
 
-def calc_scalar_prod(i):
-    return T.dot(thetas[th_idxs[i],:],ctxs[:, :, i])
+# Compile a second function computing the validation loss and accuracy:
+val_fn = theano.function([contexts, theta_idxs, idx, target_var], [loss, test_acc])
 
-results, updates = theano.scan(calc_scalar_prod, i)
-f = theano.function(inputs=[thetas, th_idxs, ctxs, i], outputs=[results])
+# Helper function for iterating mini batches
+def iterate_training_data(input_doc, Y, shuffle=True):
+    assert len(input_doc) == len(Y)
+    if shuffle:
+        indices = np.arange(len(input_doc))
+        np.random.shuffle(indices)
+    for i in range(len(input_doc)):
+        if shuffle:
+            excerpt = indices[i]
+        else:
+            excerpt = i
 
-f(thetas_v, th_idx_v, ctxs_v, np.arange(15))
+        words = input_doc[excerpt].split(" ")
+        X = np.empty((2*k,d, len(words)), dtype="float32")
+        j = 0
+        for word in words:
+            ctx = dictionary.get_context(word)
+            if ctx is not None:
+                X[:,:,j] = ctx
+                j += 1
+        yield X[:,:,0:j] / 50000, Y[excerpt]
+
+# Perform training
+num_epochs = 100
+print("Starting training...")
+for epoch in range(num_epochs):
+
+    # In each epoch, we do a full pass over the training data:
+    train_err = 0
+    train_acc = 0
+    train_count = 0
+    start_time = time.time()
+    for X, y in iterate_training_data(input_docs_train, Y_train, shuffle=False):
+        # y_arr = np.array([1, 0], dtype="int32") if y==0 else np.array([0, 1], dtype="int32")
+        err, acc = train_fn(X, np.zeros(X.shape[2], dtype="int32"), np.arange(X.shape[2], dtype="int32"), y)
+        train_err += err
+        train_acc += acc
+        train_count += 1
+        print "y = " + str(y)
+        print "total train acc: \t{:.2f}".format(train_acc * 100 / train_count)
+
+    # And a full pass over the training data again:
+    val_err = 0
+    val_acc = 0
+    val_count = 0
+    for X, y in iterate_training_data(input_docs_test, Y_test, shuffle=False):
+        #y_arr = np.array([1, 0], dtype="int32") if y==0 else np.array([0, 1], dtype="int32")
+        val_err, acc = val_fn(X, np.zeros(X.shape[2], dtype="int32"), np.arange(X.shape[2], dtype="int32"), y)
+        val_acc += acc
+        val_count += 1
+
+    # Then we print the results for this epoch:
+    print("Epoch {} of {} took {:.3f}s".format(
+        epoch + 1, num_epochs, time.time() - start_time))
+    print("  training loss:\t\t{:.6f}".format(train_err / train_count))
+    print("  validation loss:\t\t{:.6f}".format(val_err / val_count))
+    print("  validation accuracy:\t\t{:.2f} %".format( val_acc / val_count * 100))

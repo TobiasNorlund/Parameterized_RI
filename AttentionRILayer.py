@@ -6,7 +6,7 @@ import theano
 import theano.tensor as T
 import lasagne
 
-class AttentionRILayer(lasagne.layers.MergeLayer):
+class AttentionRILayer(lasagne.layers.Layer):
     """
     AttentionRILayer()
 
@@ -14,9 +14,9 @@ class AttentionRILayer(lasagne.layers.MergeLayer):
 
     Parameters
     ----------
-    incomings : a length-two list of [ InputLayer , (batchsize) ]
-        The InputLayer which represents the context matrices for the words in the documents for each batch
-        A tuple of the batchsize, which represents the input vector of the theta indexes in the batch
+    ctxs_layer: InputLayer
+        The InputLayer which represents the context matrices for the words in the document
+
     parameter_mode: one of "global", "const"
        How to parameterize this layer.
         - "global" = a global theta vector for all words
@@ -25,29 +25,41 @@ class AttentionRILayer(lasagne.layers.MergeLayer):
        An optional name to attach to this layer.
 
     """
-    def __init__(self, incomings, k, name=None, theta_const=True, num_thetas = 1):
-        assert len(incomings) == 2
+    def __init__(self, ctxs_layer, theta_idxs, idx, k, name=None, theta_const=True, num_thetas = 1):
+        assert isinstance(ctxs_layer, lasagne.layers.InputLayer)
 
-        super(lasagne.layers.MergeLayer, self).__init__(incomings, name)
+        self.input_shape = ctxs_layer.output_shape
+        self.input_layer = ctxs_layer
+        self.name = name
+        self.params = OrderedDict()
+
+        self.theta_idxs = theta_idxs
+        self.idx = idx
 
         if(theta_const):
-            self.theta = self.add_param(T.shared(np.ones(1, 2*k), name="theta"), (1, 2*k), trainable=False)
+            self.thetas = self.add_param(theano.shared(np.ones((1, 2*k), dtype="float32"), name="thetas"), (1, 2*k), trainable=False)
         else:
-            self.theta = self.add_param(T.shared(np.ones(num_thetas, 2*k), name="theta" ), (num_thetas, 2*k))
+            self.thetas = self.add_param(theano.shared(np.ones((num_thetas, 2*k), dtype="float32"), name="thetas" ), (num_thetas, 2*k))
 
 
-    def get_output_for(self, inputs, **kwargs):
+    def get_output_for(self, ctxs, **kwargs):
         """
 
-        :param inputs: list of Theano expressions
-            The Theano expressions to propagate through this layer.
+        :param ctxs:
+            Variable containing the context matrices
         :param kwargs:
         :return:
         """
 
-        assert len(inputs) == 2
+        #ctxs = theano.printing.Print('in: ')(ctxs)
 
-        return T.sum(None, axis=0)
+        def calc_scalar_prod(i):
+            return T.dot(self.thetas[self.theta_idxs[i],:],ctxs[:, :, i])
+
+        results, updates = theano.scan(calc_scalar_prod, self.idx)
+        out = T.sum(results, axis=0)
+        #out = theano.printing.Print('attention out: ')(out)
+        return out
 
 
     def get_output_shape_for(self, input_shape):
@@ -57,7 +69,7 @@ class AttentionRILayer(lasagne.layers.MergeLayer):
         :param input_shape:
         :return:
         """
-        if input_shape is tuple and len(input_shape) == 4: # (batch_size, 2*k, d, ? )
-            return input_shape # (batch_size, d)
+        if len(input_shape) == 3: # (2*k, d, ? )
+            return (1, input_shape[1]) # (d)
         else:
-            raise ValueError("Input shape to AttentionRILayer must be (batch_size, context_vector_dim)")
+            raise ValueError("Input shape to AttentionRILayer must be (win size, context_vector_dim, ?)")

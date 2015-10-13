@@ -24,7 +24,6 @@ class RiDictionary(object):
             idx = self.lines.count(" ", 0, idx)
             self.f_ctx.seek(idx * self.d * 2*self.k * np.dtype('float32').itemsize)
             ctx = np.fromstring(self.f_ctx.read(self.binary_len*2*self.k), dtype='float32')
-            print ctx.shape
             return np.reshape(ctx, newshape=( 2*self.k, self.d) )
         else:
             return None

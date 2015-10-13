@@ -21,9 +21,12 @@ def load_dataset():
     Y = []
 
     def load_file(f, y):
+        i = 0
         for line in f:
+            #if i > 200: break
             X.append(line.rstrip('\n'))
             Y.append(y)
+            i += 1
 
 
     # Load positive samples
@@ -40,4 +43,4 @@ def load_dataset():
 
 
 def num_classes():
-    return 2
+    return 1

@@ -7,7 +7,7 @@ import time
 from SumLayer import SumLayer
 from AttentionRILayer import AttentionRILayer
 from sklearn.preprocessing import normalize
-from RiDictionary import RiDictionary
+from RiDictionary import RiDictionary, RandomDictionary
 from W2vDictionary import W2vDictionary
 from sklearn.cross_validation import train_test_split
 
@@ -20,7 +20,7 @@ batchsize = 1
 # Open the dictionary to load context vectors form
 path = "/media/tobiasnorlund/ac861917-9ad7-4905-93e9-ee6ab16360ad/bigdata/Dump/Wikipedia-3000000-2000-2"
 w2vpath = "/home/tobiasnorlund/Code/CNN_sentence/GoogleNews-vectors-negative300.bin"
-dictionary = RiDictionary(path) #W2vDictionary(w2vpath)
+dictionary = RandomDictionary(path) #RiDictionary(path) #W2vDictionary(w2vpath)
 
 # Load a dataset to train and validate on
 (input_docs, Y) = PL.load_dataset()
@@ -36,7 +36,7 @@ target_var = T.iscalar('targets')
 #l_in = lasagne.layers.InputLayer((1,d), contexts)
 #l_ri = SumLayer(l_in)
 l_in = lasagne.layers.InputLayer((2*k,d,None), contexts)
-l_ri = AttentionRILayer(l_in, theta_idxs, idx, k, "AttentionLayer", theta_const=False, num_thetas=1)
+l_ri = AttentionRILayer(l_in, theta_idxs, idx, k, "AttentionLayer", theta_const=True, num_thetas=1)
 l_hid = lasagne.layers.DenseLayer(l_ri, num_units=120, nonlinearity=lasagne.nonlinearities.sigmoid)
 l_out = lasagne.layers.DenseLayer(l_hid, num_units=PL.num_classes(), nonlinearity=lasagne.nonlinearities.sigmoid)
 

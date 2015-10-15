@@ -33,3 +33,28 @@ class RiDictionary(object):
                 self.word_map[word] = None
 
         return self.word_map[word]
+
+
+class RandomDictionary(object):
+
+    def __init__(self, path):
+        self.d = int(path.split("/")[-1].split("-")[2])
+        self.k = int(path.split("/")[-1].split("-")[3])
+        self.binary_len = np.dtype('float32').itemsize * self.d
+
+        f_map = open(path + ".map", 'r')
+        self.lines = f_map.read()
+        f_map.close()
+
+        self.word_map = {}
+
+    def get_context(self, word):
+
+        if word not in self.word_map:
+            idx = self.lines.find(word + " ")
+            if idx != -1:
+                self.word_map[word] = np.random.randn(2*self.k, self.d)
+            else:
+                self.word_map[word] = None
+
+        return self.word_map[word]

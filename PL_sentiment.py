@@ -1,12 +1,9 @@
 __author__ = 'tobiasnorlund'
 
-from RiDictionary import RiDictionary
-
 def load_dataset():
     """
     Loads the Pang Lee 2005 sentiment dataset.
 
-    :parameter: dictionary A RiDictionary to load word contexts from
     :return: Tuple: (X, Y) where
         X = [ "The cat sat on the mat",
               "Anther cat was also sitting on the mat",

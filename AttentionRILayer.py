@@ -57,7 +57,8 @@ class AttentionRILayer(lasagne.layers.Layer):
             return T.dot(self.thetas[self.theta_idxs[i],:],ctxs[:, :, i])
 
         results, updates = theano.scan(calc_scalar_prod, self.idx)
-        out = T.sum(results, axis=0)
+        out = results.flatten()
+        #out = T.sum(results, axis=0)
         #out = theano.printing.Print('attention out: ')(out)
         return out
 
@@ -70,6 +71,6 @@ class AttentionRILayer(lasagne.layers.Layer):
         :return:
         """
         if len(input_shape) == 3: # (2*k, d, ? )
-            return (1, input_shape[1]) # (d)
+            return (1, input_shape[1]*2) # (d)
         else:
             raise ValueError("Input shape to AttentionRILayer must be (win size, context_vector_dim, ?)")

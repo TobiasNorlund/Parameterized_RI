@@ -27,6 +27,7 @@ def train_thetas():
 
     from dictionary import RiDictionary
     from numpy.linalg import norm
+    from collections import OrderedDict
     d = 2000
     k = 10
 
@@ -38,7 +39,7 @@ def train_thetas():
     (input_docs, Y) = load_dataset()
 
     # theta idx mapper
-    theta_idx_map = {}
+    theta_idx_map = OrderedDict()
     i = 0
     for entry in input_docs:
         splitted = entry.split()

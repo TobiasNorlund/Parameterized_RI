@@ -24,7 +24,7 @@ class RiDictionary(object):
         if word not in self.word_map:
 
             idx = self.lines.find(word + " ")
-            if idx != -1:
+            if idx != -1 and word != "":
                 idx = self.lines.count(" ", 0, idx)
                 self.f_ctx.seek(idx * self.d * 2*self.k * np.dtype('float32').itemsize)
                 ctx = np.fromstring(self.f_ctx.read(self.binary_len*2*self.k), dtype='float32')

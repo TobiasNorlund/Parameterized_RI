@@ -14,17 +14,28 @@ from sklearn.cross_validation import train_test_split
 import PL_sentiment as PL
 
 d = 2000
-k = 2
+k = 10
 batchsize = 1
 
 # Open the dictionary to load context vectors form
-path = "/media/tobiasnorlund/ac861917-9ad7-4905-93e9-ee6ab16360ad/bigdata/Dump/Wikipedia-3000000-2000-2"
+path = "/media/tobiasnorlund/ac861917-9ad7-4905-93e9-ee6ab16360ad/bigdata/Dump/Wikipedia-3000000-2000-10"
 w2vpath = "/home/tobiasnorlund/Code/CNN_sentence/GoogleNews-vectors-negative300.bin"
-dictionary = RandomDictionary(path) #RiDictionary(path) #W2vDictionary(w2vpath)
+dictionary = RiDictionary(path)# RandomDictionary(path) #RiDictionary(path) #W2vDictionary(w2vpath)
 
 # Load a dataset to train and validate on
 (input_docs, Y) = PL.load_dataset()
 (input_docs_train, input_docs_test, Y_train, Y_test) = train_test_split(input_docs, Y, test_size=0.33, random_state=42)
+
+# theta idx mapper
+theta_idx_map = {}
+i = 0
+for entry in input_docs:
+    splitted = entry.split()
+    for word in splitted:
+        if dictionary.get_context(word) is not None and word not in theta_idx_map:
+            theta_idx_map[word] = i
+            i += 1
+            sys.stdout.write("\r"+str(i*100/17030))
 
 # Build network
 contexts = T.ftensor3('contexts')
@@ -36,7 +47,7 @@ target_var = T.iscalar('targets')
 #l_in = lasagne.layers.InputLayer((1,d), contexts)
 #l_ri = SumLayer(l_in)
 l_in = lasagne.layers.InputLayer((2*k,d,None), contexts)
-l_ri = AttentionRILayer(l_in, theta_idxs, idx, k, "AttentionLayer", theta_const=True, num_thetas=1)
+l_ri = AttentionRILayer(l_in, theta_idxs, idx, k, "AttentionLayer", theta_const=False, num_thetas=i)
 l_hid = lasagne.layers.DenseLayer(l_ri, num_units=120, nonlinearity=lasagne.nonlinearities.sigmoid)
 l_out = lasagne.layers.DenseLayer(l_hid, num_units=PL.num_classes(), nonlinearity=lasagne.nonlinearities.sigmoid)
 
@@ -49,7 +60,7 @@ loss = lasagne.objectives.binary_crossentropy(prediction, target_var)
 loss = loss.mean()
 
 # Regularization
-loss += T.sum((l_ri.thetas-1)**2) * 1e-2
+#loss += T.sum((l_ri.thetas-1)**2) * 1e-2
 
 # Create update expressions for training, i.e., how to modify the
 # parameters at each training step. Here, we'll use Stochastic Gradient
@@ -103,7 +114,9 @@ for epoch in range(num_epochs):
     start_time = time.time()
     for X, y, sentence in iterate_training_data(input_docs_train, Y_train, shuffle=False):
         # y_arr = np.array([1, 0], dtype="int32") if y==0 else np.array([0, 1], dtype="int32")
-        err, acc = train_fn(X, np.zeros(X.shape[2], dtype="int32"), np.arange(X.shape[2], dtype="int32"), y)
+        if X.shape[2] == 0: continue
+        idxs = [theta_idx_map[word] for word in sentence.split(" ") if word in theta_idx_map]
+        err, acc = train_fn(X, idxs, np.arange(X.shape[2], dtype="int32"), y)
         train_err += err
         train_acc += acc
         train_count += 1
@@ -117,7 +130,8 @@ for epoch in range(num_epochs):
     val_count = 0
     for X, y, s in iterate_training_data(input_docs_test, Y_test, shuffle=False):
         #y_arr = np.array([1, 0], dtype="int32") if y==0 else np.array([0, 1], dtype="int32")
-        val_err, acc = val_fn(X, np.zeros(X.shape[2], dtype="int32"), np.arange(X.shape[2], dtype="int32"), y)
+        if X.shape[2] == 0: continue
+        val_err, acc = val_fn(X, [theta_idx_map[word] for word in s.split(" ") if word in theta_idx_map], np.arange(X.shape[2], dtype="int32"), y)
         val_acc += acc
         val_count += 1
 

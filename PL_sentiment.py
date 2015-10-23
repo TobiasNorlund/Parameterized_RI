@@ -24,7 +24,7 @@ def load_dataset():
         i = 0
         for line in f:
             #if i > 100: break
-            X.append(line.rstrip('\n'))
+            X.append(line.rstrip(' \n'))
             Y.append(y)
             i += 1
 

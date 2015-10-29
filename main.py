@@ -98,12 +98,12 @@ def iterate_training_data(input_doc, Y, shuffle=True):
         for word in words:
             ctx = dictionary.get_context(word)
             if ctx is not None:
-                X[:,:, j] = ctx / np.linalg.norm(ctx)
+                X[:,:, j] = ctx / np.sqrt(np.sum(np.sum(ctx, 0)**2))
                 j += 1
         yield X[:,:,0:j], Y[excerpt], input_doc[excerpt]
 
 # Perform training
-num_epochs = 100
+num_epochs = 30
 print("Starting training...")
 for epoch in range(num_epochs):
 
@@ -143,3 +143,7 @@ for epoch in range(num_epochs):
     print("  training accuracy:\t\t{:.2f} %".format( train_acc / train_count * 100))
     print("  validation accuracy:\t\t{:.2f} %".format( val_acc / val_count * 100))
     print("  theta: " + str(l_ri.thetas.get_value()))
+
+
+import pickle
+pickle.dump((theta_idx_map, l_ri.thetas.get_value()), open("thetas.pkl", "wb"))

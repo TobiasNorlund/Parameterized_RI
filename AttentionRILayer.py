@@ -25,7 +25,7 @@ class AttentionRILayer(lasagne.layers.Layer):
        An optional name to attach to this layer.
 
     """
-    def __init__(self, ctxs_layer, theta_idxs, idx, k, name=None, theta_const=True, num_thetas = 1):
+    def __init__(self, ctxs_layer, theta_idxs, idx, k, name=None, theta_const=True, num_thetas = 1, default_theta=None):
         assert isinstance(ctxs_layer, lasagne.layers.InputLayer)
 
         self.input_shape = ctxs_layer.output_shape
@@ -39,7 +39,7 @@ class AttentionRILayer(lasagne.layers.Layer):
         if(theta_const):
             self.thetas = self.add_param(theano.shared(np.ones((1, 2*k), dtype="float32"), name="thetas"), (1, 2*k), trainable=False)
         else:
-            self.thetas = self.add_param(theano.shared(np.ones((num_thetas, 2*k), dtype="float32"), name="thetas" ), (num_thetas, 2*k))
+            self.thetas = self.add_param(theano.shared(default_theta if default_theta is not None else np.ones((num_thetas, 2*k), dtype="float32"), name="thetas" ), (num_thetas, 2*k))
 
 
     def get_output_for(self, ctxs, **kwargs):

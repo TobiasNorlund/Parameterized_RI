@@ -4,6 +4,8 @@ import theano
 import lasagne
 import theano.tensor as T
 import time
+import scipy.stats
+import numpy.matlib
 from SumLayer import SumLayer
 from AttentionRILayer import AttentionRILayer
 from sklearn.preprocessing import normalize
@@ -20,6 +22,7 @@ batchsize = 1
 # Open the dictionary to load context vectors form
 path = "/media/tobiasnorlund/ac861917-9ad7-4905-93e9-ee6ab16360ad/bigdata/Dump/Wikipedia-3000000-2000-10"
 w2vpath = "/home/tobiasnorlund/Code/CNN_sentence/GoogleNews-vectors-negative300.bin"
+thetas_path = "SimLex-thetas-10.pkl"
 dictionary = RiDictionary(path)# RandomDictionary(path) #RiDictionary(path) #W2vDictionary(w2vpath)
 
 # Load a dataset to train and validate on
@@ -41,13 +44,22 @@ for entry in input_docs:
 contexts = T.ftensor3('contexts')
 theta_idxs = T.ivector('theta_idxs')
 idx = T.ivector('idx')
+default_theta = np.array([scipy.stats.norm.pdf(x, scale=3) for x in range(-10, 11) if x!=0], dtype="float32")
+thetas = np.matlib.repmat(default_theta/sum(default_theta)*2*k,i,1)#np.ones((len(theta_idx_map), 2*k), dtype="float32")
 
 target_var = T.iscalar('targets')
+
+# Pre-load thetas
+import pickle
+(pretrained_thetas_idx_map, pretrained_thetas) = pickle.load(open(thetas_path))
+for (word, pt_idx) in pretrained_thetas_idx_map.iteritems():
+    if word in theta_idx_map:
+        thetas[theta_idx_map[word],:] = pretrained_thetas[pt_idx,:]
 
 #l_in = lasagne.layers.InputLayer((1,d), contexts)
 #l_ri = SumLayer(l_in)
 l_in = lasagne.layers.InputLayer((2*k,d,None), contexts)
-l_ri = AttentionRILayer(l_in, theta_idxs, idx, k, "AttentionLayer", theta_const=False, num_thetas=i)
+l_ri = AttentionRILayer(l_in, theta_idxs, idx, k, "AttentionLayer", theta_const=False, num_thetas=i, default_theta=thetas)
 l_hid = lasagne.layers.DenseLayer(l_ri, num_units=120, nonlinearity=lasagne.nonlinearities.sigmoid)
 l_out = lasagne.layers.DenseLayer(l_hid, num_units=PL.num_classes(), nonlinearity=lasagne.nonlinearities.sigmoid)
 

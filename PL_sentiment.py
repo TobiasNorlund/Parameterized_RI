@@ -15,7 +15,7 @@ def load_dataset():
         Y = [ 0, 1, 1, 1, 0, 1, 0, ... ]
     """
 
-    path_prefix = "/home/tobiasnorlund/Code/Datasets/PL-05/rt-polaritydata/rt-polarity"
+    path_prefix = "/home/tobiasnorlund/Datasets/PL-05/rt-polarity"
 
     X = []
     Y = []

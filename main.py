@@ -6,11 +6,9 @@ import theano.tensor as T
 import time
 import scipy.stats
 import numpy.matlib
-from SumLayer import SumLayer
+
 from AttentionRILayer import AttentionRILayer
-from sklearn.preprocessing import normalize
 from RiDictionary import RiDictionary, RandomDictionary
-from W2vDictionary import W2vDictionary
 from sklearn.cross_validation import train_test_split
 
 import PL_sentiment as PL
@@ -50,16 +48,16 @@ thetas = np.matlib.repmat(default_theta/sum(default_theta)*2*k,i,1)#np.ones((len
 target_var = T.iscalar('targets')
 
 # Pre-load thetas
-import pickle
-(pretrained_thetas_idx_map, pretrained_thetas) = pickle.load(open(thetas_path))
-for (word, pt_idx) in pretrained_thetas_idx_map.iteritems():
-    if word in theta_idx_map:
-        thetas[theta_idx_map[word],:] = pretrained_thetas[pt_idx,:]
+# import pickle
+# (pretrained_thetas_idx_map, pretrained_thetas) = pickle.load(open(thetas_path))
+# for (word, pt_idx) in pretrained_thetas_idx_map.iteritems():
+#     if word in theta_idx_map:
+#         thetas[theta_idx_map[word],:] = pretrained_thetas[pt_idx,:]
 
 #l_in = lasagne.layers.InputLayer((1,d), contexts)
 #l_ri = SumLayer(l_in)
 l_in = lasagne.layers.InputLayer((2*k,d,None), contexts)
-l_ri = AttentionRILayer(l_in, theta_idxs, idx, k, "AttentionLayer", theta_const=False, num_thetas=i, default_theta=thetas)
+l_ri = AttentionRILayer(l_in, theta_idxs, idx, k, "AttentionLayer", theta_const=False, num_thetas=i, default_theta=None)
 l_hid = lasagne.layers.DenseLayer(l_ri, num_units=120, nonlinearity=lasagne.nonlinearities.sigmoid)
 l_out = lasagne.layers.DenseLayer(l_hid, num_units=PL.num_classes(), nonlinearity=lasagne.nonlinearities.sigmoid)
 

@@ -1,23 +1,23 @@
-import sys
-import numpy as np
-import theano
-import lasagne
-import theano.tensor as T
-import time
 import scipy.stats
-import numpy.matlib
+import sys
+import time
 
-from AttentionRILayer import AttentionRILayer
-from RiDictionary import RiDictionary, RandomDictionary
+import lasagne
+import numpy as np
+import numpy.matlib
+import theano
+import theano.tensor as T
+from RiDictionary import RiDictionary
 from sklearn.cross_validation import train_test_split
 
-import PL_sentiment as PL
+from AttentionRILayer import AttentionRILayer
+from dataset import PL_sentiment as PL
 
 d = 2000
 k = 10
 batchsize = 1
 
-# Open the dictionary to load context vectors form
+# Open the dictionary to load context vectors formsyste
 path = "/media/tobiasnorlund/ac861917-9ad7-4905-93e9-ee6ab16360ad/bigdata/Dump/Wikipedia-3000000-2000-10"
 w2vpath = "/home/tobiasnorlund/Code/CNN_sentence/GoogleNews-vectors-negative300.bin"
 thetas_path = "SimLex-thetas-10.pkl"

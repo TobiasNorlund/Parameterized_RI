@@ -1,5 +1,3 @@
-__author__ = 'tobiasnorlund'
-
 import numpy as np, sys, struct
 import pickle
 import os.path
@@ -21,27 +19,37 @@ from scipy.sparse import csr_matrix, lil_matrix
 
 """
 
+__all__ = [
+    "RiDictionary",
+    "PmiRiDictionary",
+    "W2vDictionary",
+    "RandomDictionary"
+]
+
 class RiDictionary(object):
 
 
-    def __init__(self, path):
+    def __init__(self, path, words_to_load=None, normalize=True):
 
-        self.n = int(path.split("/")[-1].split("-")[1])
         self.d = int(path.split("/")[-1].split("-")[2])
         self.k = int(path.split("/")[-1].split("-")[3])
         self.binary_len = np.dtype('float32').itemsize * self.d
         self.word_map = OrderedDict()
+        self.normalize = normalize
 
         WordMeta = namedtuple("WordMeta", "idx focus_count context_count")
 
         sys.stdout.write("Loading word meta data...")
 
+        if words_to_load is not None: words_to_load = set(words_to_load) # Convert to set for speed
         idx = 0
-        for line in open(path + ".new.map", 'r'):
+        for line in open(path + ".map", 'r'):
             splitted = line.split("\t")
-            self.word_map[splitted[0]] = WordMeta(idx, int(splitted[1]), int(splitted[2]))
-            idx += 1
+            if words_to_load is not None and splitted[0] in words_to_load:
+                self.word_map[splitted[0]] = WordMeta(idx, int(splitted[1]), int(splitted[2]))
+                idx += 1
 
+        self.n = len(self.word_map)
         self.f_ctx = open(path + ".context.bin", mode="rb")
 
         sys.stdout.write("\r")
@@ -58,11 +66,13 @@ class RiDictionary(object):
 
     def get_all_word_vectors(self):
         mtx = np.empty((self.n,self.d), dtype="float32")
+        ordered_word_map = OrderedDict()
         i = 0
         for word in self.word_map.keys():
             mtx[i,:] = self.get_word_vector(word)
+            ordered_word_map[word] = i
             i += 1
-        return (mtx, OrderedDict((k, v.idx) for (k, v) in self.word_map.iteritems()))
+        return (mtx, ordered_word_map)
 
     def iter_words(self):
         for word in self.word_map:
@@ -71,15 +81,15 @@ class RiDictionary(object):
     def get_context(self, word):
         if word in self.word_map:
             self.f_ctx.seek(self.word_map[word].idx * self.d * 2*self.k * np.dtype('float32').itemsize)
-            ctx = np.fromstring(self.f_ctx.read(self.binary_len*2*self.k), dtype='float32')
-            return np.reshape(ctx, newshape=( 2*self.k, self.d) )
+            ctx = np.reshape(np.fromstring(self.f_ctx.read(self.binary_len*2*self.k), dtype='float32'), newshape=( 2*self.k, self.d) )
+            return ctx if not self.normalize else ctx / np.sqrt(np.sum(np.sum(ctx, 0)**2))
         else:
             return None
 
-class LogTransformRiDictionary(RiDictionary):
+class PmiRiDictionary(RiDictionary):
 
     def __init__(self, filepathprefix, epsilon, use_true_counts=False):
-        super(LogTransformRiDictionary, self).__init__(filepathprefix)
+        super(PmiRiDictionary, self).__init__(filepathprefix)
         self.epsilon = epsilon
 
         # Build sparse index vector matrix
@@ -88,7 +98,7 @@ class LogTransformRiDictionary(RiDictionary):
             (self.R, self.word_idx, self.focus_counts, self.context_counts) = pickle.load(open(filepathprefix + ".index.pkl"))
         else:
             f = open(filepathprefix + ".index.bin", mode="rb")
-            f_map = open(filepathprefix + ".new.map")
+            f_map = open(filepathprefix + ".map")
             self.R = lil_matrix((self.n,self.d), dtype="int8")
             self.context_counts = np.empty(self.n, dtype="uint32")
             self.focus_counts = np.empty(self.n, dtype="uint32")
@@ -119,7 +129,7 @@ class LogTransformRiDictionary(RiDictionary):
         print "Loaded!"
 
     def get_word_vector(self, word):
-        vec = super(LogTransformRiDictionary, self).get_word_vector(word)
+        vec = super(PmiRiDictionary, self).get_word_vector(word)
         if vec is not None:
             if hasattr(self, "f_count"): # if we have the true counts
                 self.f_count.seek(self.n*4*self.word_idx[word])

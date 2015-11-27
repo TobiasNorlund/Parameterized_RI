@@ -14,7 +14,7 @@
     get_variable_vars()                  : list of theano variables needed for the embeddings
     get_variables([word1, ...])          : list of variable values
 
-    get_parameter_vars()                 : list of Theano shared variables (passed to "givens")
+    get_parameter_vars()                 : list of Theano shared variables
     get_update_parameter_vars()          : list of Theano shared variables of update params (passed to "updates")
 
 

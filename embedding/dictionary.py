@@ -45,7 +45,7 @@ class RiDictionary(object):
         idx = 0
         for line in open(path + ".map", 'r'):
             splitted = line.split("\t")
-            if words_to_load is not None and splitted[0] in words_to_load:
+            if words_to_load is None or (words_to_load is not None and splitted[0] in words_to_load):
                 self.word_map[splitted[0]] = WordMeta(idx, int(splitted[1]), int(splitted[2]))
                 idx += 1
 
@@ -174,7 +174,7 @@ class W2vDictionary(object):
                     word.append(ch)
 
             vec = np.fromstring(f.read(binary_len), dtype='float32')
-            if words_to_load is not None and word in words_to_load:
+            if words_to_load is None or (words_to_load is not None and word in words_to_load):
                 self.word_map[word] = idx
                 self.word_vectors[idx,:] = vec
                 idx += 1
@@ -195,37 +195,42 @@ class W2vDictionary(object):
 
 class RandomDictionary(object):
 
-    def __init__(self, path):
+    def __init__(self, path, words_to_load=None):
         self.d = int(path.split("/")[-1].split("-")[2])
         self.k = int(path.split("/")[-1].split("-")[3])
         self.binary_len = np.dtype('float32').itemsize * self.d
 
-        f_map = open(path + ".map", 'r')
-        self.lines = f_map.read()
-        f_map.close()
+        if words_to_load is not None:
+            words_to_load = set(words_to_load) # Convert to set for speed
+            self.locked = True
+        else:
+            self.locked = False
 
+        idx = 0
         self.word_map = {}
+        for line in open(path + ".map", 'r'):
+            splitted = line.split("\t")
+            if words_to_load is not None and splitted[0] in words_to_load:
+                self.word_map[splitted[0]] = np.random.randn(self.d)
+                idx += 1
+
+    @property
+    def n(self):
+        return len(self.word_map)
 
     def get_word_vector(self, word):
+        if word not in self.word_map and not self.locked:
+            self.word_map[word] = np.random.randn(self.d)
 
-        if word not in self.word_map:
-            idx = self.lines.find(word + " ")
-            if idx != -1:
-                self.word_map[word] = np.random.randn(self.d)
-            else:
-                self.word_map[word] = None
+        return self.word_map[word] if word in self.word_map else None
 
-        return self.word_map[word]
+    def get_all_word_vectors(self):
+        mtx = np.empty((self.n, self.d), dtype="float32")
+        ord_dict = OrderedDict()
+        i = 0
+        for word, vec in self.word_map.iteritems():
+            ord_dict[word] = i
+            mtx[i,:] = vec
+            i += 1
 
-    def get_context(self, word):
-
-        if word not in self.word_map:
-            idx = self.lines.find(word + " ")
-            if idx != -1:
-                self.word_map[word] = np.random.randn(2*self.k, self.d)
-            else:
-                self.word_map[word] = None
-
-        return self.word_map[word]
-
-
+        return (mtx, ord_dict)

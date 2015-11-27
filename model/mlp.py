@@ -74,7 +74,7 @@ class MLP(object):
 
             for i in range(len(input_docs)):
                 excerpt = indices[i] if shuffle else i
-                yield input_docs[excerpt], Y[excerpt],
+                yield input_docs[excerpt], Y[excerpt]
 
         ## Perform the training
         print("Starting training...")

@@ -149,7 +149,7 @@ class PmiRiDictionary(RiDictionary):
 class W2vDictionary(object):
 
 
-    def __init__(self, path):
+    def __init__(self, path, words_to_load=None):
 
         f = open(path, mode="rb")
         header = f.readline().split(" ") # read header
@@ -173,9 +173,11 @@ class W2vDictionary(object):
                 if ch != '\n':
                     word.append(ch)
 
-            self.word_map[word] = idx
-            self.word_vectors[idx,:] = np.fromstring(f.read(binary_len), dtype='float32')
-            idx += 1
+            vec = np.fromstring(f.read(binary_len), dtype='float32')
+            if words_to_load is not None and word in words_to_load:
+                self.word_map[word] = idx
+                self.word_vectors[idx,:] = vec
+                idx += 1
 
     def get_all_word_vectors(self):
         return (self.word_vectors, self.word_map)

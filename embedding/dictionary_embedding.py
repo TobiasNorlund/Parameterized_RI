@@ -55,6 +55,9 @@ class DictionaryEmbedding(object):
         #     if emb is not None:
         #         embs[i,:] = emb
 
+    def has(self, word):
+        return self.dictionary.has(word)
+
     def get_variable_vars(self):
         return self.variables
 

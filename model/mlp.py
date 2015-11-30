@@ -90,6 +90,8 @@ class MLP(object):
             for doc, y in iterate_training_data(input_docs_train, Y_train, shuffle=False):
 
                 words = doc.split(" ")
+                if not any([embedding.has(word) for word in words]): continue # If no embeddings, skip this doc
+
                 err, acc = train_fn(y, *embedding.get_variables(words))
                 train_err += err
                 train_acc += acc
@@ -104,6 +106,8 @@ class MLP(object):
             for doc, y in iterate_training_data(input_docs_test, Y_test, shuffle=False):
 
                 words = doc.split(" ")
+                if not any([embedding.has(word) for word in words]): continue # If no embeddings, skip this doc
+
                 val_err, acc = val_fn(y, *embedding.get_variables(words))
                 val_acc += acc
                 val_count += 1

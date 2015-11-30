@@ -9,7 +9,7 @@ class AttentionRiEmbedding(object):
         self.dictionary = RiDictionary(dict_path, words_to_load=words_to_load)
         
         # Init thetas to ones
-        self.thetas = np.ones((self.dictionary.n, self.d), dtype="float32")
+        self.thetas = np.ones((self.dictionary.n, self.dictionary.k*2), dtype="float32")
 
         # Create theno variables
         self.contexts_var = T.ftensor3("contexts")
@@ -22,12 +22,15 @@ class AttentionRiEmbedding(object):
         return self.dictionary.d
 
     def get_embeddings_expr(self):
-        res, upd = theano.scan(lambda i: T.dot(self.thetas_var[self.theta_idxs_var[i],:],self.contexts_var[:,:,i]), self.idx)
+        res, upd = theano.scan(lambda i: T.dot(self.thetas_var[self.theta_idxs_var[i],:],self.contexts_var[:,:,i]), self.idx_var)
         return res
 
     def get_embeddings(self, words):
         # TODO: Implement
         pass
+
+    def has(self, word):
+        return self.dictionary.has(word)
 
     def get_variable_vars(self):
         return [self.contexts_var, self.theta_idxs_var, self.idx_var]
@@ -40,8 +43,8 @@ class AttentionRiEmbedding(object):
         for word in words:
             context = self.dictionary.get_context(word) 
             if context is not None:
-                contexts[:,:,i] = contexts
-                theta_idxs.append(self.dictionary.get_word_meta(word).idx)
+                contexts[:,:,i] = context
+                theta_idxs.append(self.dictionary.get_word_meta(word).dict_idx)
                 idx.append(i)
                 i += 1
 

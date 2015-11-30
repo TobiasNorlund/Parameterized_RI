@@ -12,6 +12,7 @@ from scipy.sparse import csr_matrix, lil_matrix
 
     __init__( ... ) :               Arbitrary args to init the dictionary
 
+    has(word) :                     Returns True if word exists in dictionary, otherwise False
     get_word_vector(string word) :  Returns a d-dim vector if the word exists in the dictionary, else None
     get_all_word_vectors() :        Returns a (mtx, OrderedDict<word,idx>) tuple of all word vectors
 
@@ -37,22 +38,27 @@ class RiDictionary(object):
         self.word_map = OrderedDict()
         self.normalize = normalize
 
-        WordMeta = namedtuple("WordMeta", "idx focus_count context_count")
+        WordMeta = namedtuple("WordMeta", "idx dict_idx focus_count context_count")
 
         sys.stdout.write("Loading word meta data...")
 
         if words_to_load is not None: words_to_load = set(words_to_load) # Convert to set for speed
         idx = 0
+        dict_idx = 0
         for line in open(path + ".map", 'r'):
             splitted = line.split("\t")
             if words_to_load is None or (words_to_load is not None and splitted[0] in words_to_load):
-                self.word_map[splitted[0]] = WordMeta(idx, int(splitted[1]), int(splitted[2]))
+                self.word_map[splitted[0]] = WordMeta(idx, dict_idx, int(splitted[1]), int(splitted[2]))
+                dict_idx += 1
             idx += 1
 
         self.n = len(self.word_map)
         self.f_ctx = open(path + ".context.bin", mode="rb")
 
         sys.stdout.write("\r")
+
+    def has(self, word):
+        return word in self.word_map
 
     def get_word_vector(self, word):
         ctx = self.get_context(word)
@@ -102,7 +108,7 @@ class PmiRiDictionary(RiDictionary):
             self.R = lil_matrix((self.n,self.d), dtype="int8")
             self.context_counts = np.empty(self.n, dtype="uint32")
             self.focus_counts = np.empty(self.n, dtype="uint32")
-            self.word_idx = OrderedDict()
+            self.word_idx = OrderedDict() # Could use self.word_map.idx right??
             for i in range(self.n):
                 for e in range(epsilon):
                     val = struct.unpack("h", f.read(2))[0]
@@ -179,6 +185,9 @@ class W2vDictionary(object):
                 self.word_vectors[idx,:] = vec
                 idx += 1
 
+    def has(self, word):
+        return word in self.word_map
+
     def get_all_word_vectors(self):
         return (self.word_vectors, self.word_map)
 
@@ -217,6 +226,9 @@ class RandomDictionary(object):
     @property
     def n(self):
         return len(self.word_map)
+
+    def has(self, word):
+        return word in self.word_map
 
     def get_word_vector(self, word):
         if word not in self.word_map and not self.locked:

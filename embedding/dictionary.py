@@ -27,8 +27,9 @@ __all__ = [
     "RandomDictionary"
 ]
 
-class RiDictionary(object):
+WordMeta = namedtuple("WordMeta", "idx dict_idx focus_count context_count")
 
+class RiDictionary(object):
 
     def __init__(self, path, words_to_load=None, normalize=True):
 
@@ -37,8 +38,6 @@ class RiDictionary(object):
         self.binary_len = np.dtype('float32').itemsize * self.d
         self.word_map = OrderedDict()
         self.normalize = normalize
-
-        WordMeta = namedtuple("WordMeta", "idx dict_idx focus_count context_count")
 
         sys.stdout.write("Loading word meta data...")
 
@@ -94,21 +93,19 @@ class RiDictionary(object):
 
 class PmiRiDictionary(RiDictionary):
 
-    def __init__(self, filepathprefix, epsilon, use_true_counts=False):
-        super(PmiRiDictionary, self).__init__(filepathprefix)
+    def __init__(self, filepathprefix, epsilon, words_to_load=None, use_true_counts=False):
+        super(PmiRiDictionary, self).__init__(filepathprefix, words_to_load, normalize=False)
         self.epsilon = epsilon
 
         # Build sparse index vector matrix
         print "Loads index vectors...\n"
         if os.path.isfile(filepathprefix + ".index.pkl"):
-            (self.R, self.word_idx, self.focus_counts, self.context_counts) = pickle.load(open(filepathprefix + ".index.pkl"))
+            (self.R, self.context_counts) = pickle.load(open(filepathprefix + ".index.pkl"))
         else:
             f = open(filepathprefix + ".index.bin", mode="rb")
             f_map = open(filepathprefix + ".map")
             self.R = lil_matrix((self.n,self.d), dtype="int8")
             self.context_counts = np.empty(self.n, dtype="uint32")
-            self.focus_counts = np.empty(self.n, dtype="uint32")
-            self.word_idx = OrderedDict() # Could use self.word_map.idx right??
             for i in range(self.n):
                 for e in range(epsilon):
                     val = struct.unpack("h", f.read(2))[0]
@@ -116,14 +113,12 @@ class PmiRiDictionary(RiDictionary):
                     self.R[i,idx] = 1 if val % 2 == 1 else -1
 
                 counts_str = f_map.readline().split("\t")
-                self.word_idx[counts_str[0]] = i
-                self.focus_counts[i] = int(counts_str[1])
                 self.context_counts[i] = int(counts_str[2]) if int(counts_str[2]) > 0 else 1
 
                 sys.stdout.write("\r" + str(i))
 
             self.R = csr_matrix(self.R)
-            pickle.dump((self.R, self.word_idx, self.focus_counts, self.context_counts) , open(filepathprefix + ".index.pkl", mode="w"))
+            pickle.dump((self.R, self.context_counts) , open(filepathprefix + ".index.pkl", mode="w"))
             f.close()
             f_map.close()
 
@@ -131,19 +126,21 @@ class PmiRiDictionary(RiDictionary):
         if use_true_counts and os.path.isfile(filepathprefix + ".counts"):
             self.f_count = open(filepathprefix + ".counts")
 
-        self.sum_ctxs = self.context_counts.sum()
+        #self.context_counts = np.array([meta[1].context_count for meta in self.word_map.items()])
+        #self.context_counts[self.context_counts == 0] = 1
+        self.sum_ctxs = np.sum(self.context_counts)
         print "Loaded!"
 
     def get_word_vector(self, word):
         vec = super(PmiRiDictionary, self).get_word_vector(word)
         if vec is not None:
             if hasattr(self, "f_count"): # if we have the true counts
-                self.f_count.seek(self.n*4*self.word_idx[word])
+                self.f_count.seek(self.n*4*self.word_map[word].idx)
                 bow = np.fromstring(self.f_count.read(self.n*4), dtype="uint32").astype("float32")
             else: # estimate the counts
                 bow = np.maximum(0, self.R.dot(vec) / self.epsilon)
-                bow = bow / (bow.sum() / self.context_counts[self.word_idx[word]]) # we know the total context counts. improve count estimates so that bow.sum() == true total count
-            bow = np.log(bow * self.sum_ctxs / (self.focus_counts[self.word_idx[word]]*self.context_counts))
+                bow = bow / (bow.sum() / self.word_map[word].context_count) # we know the total context counts. improve count estimates so that bow.sum() == true total count
+            bow = np.log(bow * self.sum_ctxs / (self.word_map[word].focus_count*self.context_counts))
             bow[bow == -np.inf] = 0
 
             return self.R.T.dot(bow)

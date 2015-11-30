@@ -47,7 +47,7 @@ class RiDictionary(object):
             splitted = line.split("\t")
             if words_to_load is None or (words_to_load is not None and splitted[0] in words_to_load):
                 self.word_map[splitted[0]] = WordMeta(idx, int(splitted[1]), int(splitted[2]))
-                idx += 1
+            idx += 1
 
         self.n = len(self.word_map)
         self.f_ctx = open(path + ".context.bin", mode="rb")

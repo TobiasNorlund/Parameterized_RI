@@ -1,0 +1,3 @@
+[submodule "CNN_sentence"]
+	path = CNN_sentence
+	url = https://github.com/tobiasnorlund/CNN_sentence

@@ -93,9 +93,12 @@ class RiDictionary(object):
 
 class PmiRiDictionary(RiDictionary):
 
-    def __init__(self, filepathprefix, epsilon, words_to_load=None, use_true_counts=False):
+    def __init__(self, filepathprefix, epsilon, words_to_load=None, use_true_counts=False, normalize=False, cachefile=None):
         super(PmiRiDictionary, self).__init__(filepathprefix, words_to_load, normalize=False)
         self.epsilon = epsilon
+        self.normalize = normalize
+        self.filepathprefix = filepathprefix
+        self.cache = {} if cachefile is None else pickle.load(open(cachefile))
 
         # Build sparse index vector matrix
         print "Loads index vectors...\n"
@@ -126,28 +129,33 @@ class PmiRiDictionary(RiDictionary):
         if use_true_counts and os.path.isfile(filepathprefix + ".counts"):
             self.f_count = open(filepathprefix + ".counts")
 
-        #self.context_counts = np.array([meta[1].context_count for meta in self.word_map.items()])
-        #self.context_counts[self.context_counts == 0] = 1
         self.sum_ctxs = np.sum(self.context_counts)
         print "Loaded!"
 
     def get_word_vector(self, word):
-        vec = super(PmiRiDictionary, self).get_word_vector(word)
-        if vec is not None:
-            if hasattr(self, "f_count"): # if we have the true counts
-                self.f_count.seek(self.n*4*self.word_map[word].idx)
-                bow = np.fromstring(self.f_count.read(self.n*4), dtype="uint32").astype("float32")
-            else: # estimate the counts
-                bow = np.maximum(0, self.R.dot(vec) / self.epsilon)
-                bow = bow / (bow.sum() / self.word_map[word].context_count) # we know the total context counts. improve count estimates so that bow.sum() == true total count
-            bow = np.log(bow * self.sum_ctxs / (self.word_map[word].focus_count*self.context_counts))
-            bow[bow == -np.inf] = 0
 
-            return self.R.T.dot(bow)
-        else:
-            return None
+        if word not in self.cache:
 
+            vec = super(PmiRiDictionary, self).get_word_vector(word)
+            if vec is not None:
+                if hasattr(self, "f_count"): # if we have the true counts
+                    self.f_count.seek(self.n*4*self.word_map[word].idx)
+                    bow = np.fromstring(self.f_count.read(self.n*4), dtype="uint32").astype("float32")
+                else: # estimate the counts
+                    bow = np.maximum(0, self.R.dot(vec) / self.epsilon)
+                    bow = bow / (bow.sum() / self.word_map[word].context_count) # we know the total context counts. improve count estimates so that bow.sum() == true total count
+                bow = np.log(bow * self.sum_ctxs / (self.word_map[word].focus_count*self.context_counts))
+                bow[bow == -np.inf] = 0
 
+                back_proj = self.R.T.dot(bow)
+                self.cache[word] = back_proj if not self.normalize else back_proj / np.linalg.norm(back_proj)
+            else:
+                return None
+
+        return self.cache[word]
+
+    def save_cache(self):
+        pickle.dump(self.cache, open(self.filepathprefix + ".context.cache.pkl", "w"))
 
 class W2vDictionary(object):
 

@@ -74,13 +74,3 @@ class DictionaryEmbedding(object):
 
     def get_update_parameter_vars(self):
         return self.update_parameters
-
-
-# words = np.random.randn(10,2000)
-#
-# words_var = theano.shared(words, name="words")
-# idx_var = T.ivector("idx")
-#
-#
-#
-# res =

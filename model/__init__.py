@@ -5,7 +5,7 @@
 
   Model interface :
 
-
+    evaluate(embedding, dataset)    : Evaluate the embeddings on the dataset using this model
 
 """
 

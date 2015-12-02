@@ -50,8 +50,5 @@ class AttentionRiEmbedding(object):
 
         return [contexts[:,:,0:i], theta_idxs, idx]
 
-    def get_parameter_vars(self):
-        return []
-
     def get_update_parameter_vars(self):
         return [self.thetas_var]

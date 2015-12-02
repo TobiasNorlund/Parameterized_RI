@@ -69,8 +69,5 @@ class DictionaryEmbedding(object):
 
         return [idxs]
 
-    def get_parameter_vars(self):
-        return []
-
     def get_update_parameter_vars(self):
         return self.update_parameters

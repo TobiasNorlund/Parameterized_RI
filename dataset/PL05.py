@@ -1,8 +1,10 @@
+import dataset
 
 class PL05(object):
 
-    def __init__(self, path_prefix):
+    def __init__(self, path_prefix, clean_string=True):
         self.path_prefix = path_prefix
+        self.clean_string = clean_string
 
     def load(self):
         """
@@ -22,8 +24,9 @@ class PL05(object):
         def load_file(f, y):
             i = 0
             for line in f:
-                #if i > 100: break
-                X.append(line.rstrip(' \n'))
+                if self.clean_string:
+                    line = dataset.clean_str(line.strip())
+                X.append(line)
                 Y.append(y)
                 i += 1
 

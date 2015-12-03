@@ -166,16 +166,17 @@ class W2vDictionary(object):
         header = f.readline().split(" ") # read header
 
         self.d = int(header[1])
-        self.n = int(header[0])
+        file_n = int(header[0])
+        self.n = file_n if words_to_load is None else len(words_to_load)
         binary_len = np.dtype('float32').itemsize * self.d
 
         self.word_map = OrderedDict()
         self.word_vectors = np.empty((self.n,self.d), dtype="float32")
 
         idx = 0
-        for line in xrange(self.n):
+        for line in xrange(file_n):
             word = []
-            if line % 10000 == 0: sys.stdout.write("\rLoading w2v vectors... (" + str(line *100.0 / self.n) + "%)")
+            if line % 10000 == 0: sys.stdout.write("\rLoading w2v vectors... (" + str(line *100.0 / file_n) + "%)")
             while True:
                 ch = f.read(1)
                 if ch == ' ':
@@ -184,11 +185,14 @@ class W2vDictionary(object):
                 if ch != '\n':
                     word.append(ch)
 
-            vec = np.fromstring(f.read(binary_len), dtype='float32')
+            vec_raw = f.read(binary_len)
             if words_to_load is None or (words_to_load is not None and word in words_to_load):
                 self.word_map[word] = idx
-                self.word_vectors[idx,:] = vec
+                self.word_vectors[idx,:] = np.fromstring(vec_raw, dtype='float32')
                 idx += 1
+
+        self.word_vectors = self.word_vectors[:idx,:]
+        self.n = idx
 
     def has(self, word):
         return word in self.word_map

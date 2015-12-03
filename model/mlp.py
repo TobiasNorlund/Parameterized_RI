@@ -1,10 +1,10 @@
 import sys
+import model
 import time
 import numpy as np
 import lasagne
 import theano
 import theano.tensor as T
-from sklearn.cross_validation import train_test_split
 
 class MLP(object):
 
@@ -30,7 +30,7 @@ class MLP(object):
 
         # Load dataset
         (input_docs, Y) = dataset.load()
-        (input_docs_train, input_docs_test, Y_train, Y_test) = train_test_split(input_docs, Y, test_size=0.33, random_state=42)
+        (input_docs_train, input_docs_test, Y_train, Y_test) = model.train_test_split(input_docs, Y, test_size=0.33)
 
         # Fetch embeddings expression and represent the document as a sum of the words
         embeddings_var = embedding.get_embeddings_expr()

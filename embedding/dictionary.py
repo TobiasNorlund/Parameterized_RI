@@ -225,7 +225,7 @@ class RandomDictionary(object):
         for line in open(path + ".map", 'r'):
             splitted = line.split("\t")
             if words_to_load is not None and splitted[0] in words_to_load:
-                self.word_map[splitted[0]] = np.random.randn(self.d)
+                self.word_map[splitted[0]] = np.random.randn(self.d).astype('float32')
                 idx += 1
 
     @property

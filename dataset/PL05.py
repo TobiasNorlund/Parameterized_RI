@@ -1,6 +1,9 @@
 
 class PL05(object):
 
+    def __init__(self, path_prefix):
+        self.path_prefix = path_prefix
+
     def load(self):
         """
         Loads the Pang Lee 2005 sentiment dataset.
@@ -13,9 +16,6 @@ class PL05(object):
 
             Y = [ 0, 1, 1, 1, 0, 1, 0, ... ]
         """
-
-        path_prefix = "/home/tobiasnorlund/Datasets/PL-05/rt-polarity"
-
         X = []
         Y = []
 
@@ -29,12 +29,12 @@ class PL05(object):
 
 
         # Load positive samples
-        f = open(path_prefix + ".pos")
+        f = open(self.path_prefix + ".pos")
         load_file(f, 1)
         f.close()
 
         # Load negative samples
-        f = open(path_prefix + ".neg")
+        f = open(self.path_prefix + ".neg")
         load_file(f, 0)
         f.close()
 

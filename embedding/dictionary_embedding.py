@@ -13,6 +13,11 @@ class DictionaryEmbedding(object):
     def __init__(self, dictionary, enable_embedding_update=False):
         self.dictionary = dictionary
         (self.words, self.word_map) = dictionary.get_all_word_vectors()
+
+        # Add zero word "##zero##"
+        self.words = np.vstack((self.words, np.zeros(self.d, dtype="float32")))
+        self.word_map["##zero##"] = self.words.shape[0]-1
+
         print "Total words: " + str(self.words.shape[0])
 
         # Theano variables

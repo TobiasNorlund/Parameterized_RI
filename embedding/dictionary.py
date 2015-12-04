@@ -54,7 +54,7 @@ class RiDictionary(object):
         self.n = len(self.word_map)
         if os.path.isfile(path + ".context.bin"):
             self.f_ctx = open(path + ".context.bin", mode="rb")
-        elif:
+        else:
             self.f_ctx = None
             print "WARNING: No context file was found"
 

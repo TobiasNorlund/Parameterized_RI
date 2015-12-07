@@ -24,6 +24,7 @@ __all__ = [
     "RiDictionary",
     "PmiRiDictionary",
     "W2vDictionary",
+    "PyDsmDictionary",
     "RandomDictionary",
     "StaticDictionary"
 ]
@@ -223,6 +224,52 @@ class W2vDictionary(object):
         for word in self.word_map:
             yield (word, self.get_word_vector(word))
 
+class PyDsmDictionary(object):
+
+    """
+    A dictionary that uses pydsm and loads a .pydsm file
+    """
+
+    def __init__(self, file_to_load, words_to_include=None):
+        import bz2
+        print("Loading '" + file_to_load + "' pickled from pydsm...")
+        (self.matrix, row2word, col2word) = pickle.load(bz2.BZ2File(file_to_load, "rb"))
+        self.matrix = csr_matrix(self.matrix).astype("float32")
+        self.word_map = OrderedDict(zip(row2word,range(len(row2word))))
+
+        if words_to_include is not None:
+            if type(words_to_include) is not set: words_to_load = set(words_to_include)
+            words = [word for word in row2word if word in words_to_include]
+            idxs = [self.word_map[word] for word in words]
+
+            self.matrix = self.matrix[idxs,:]
+            self.word_map = OrderedDict(zip(words, range(len(words))))
+
+        print("\rLoaded!")
+
+    @property
+    def d(self):
+        return self.matrix.shape[1]
+
+    @property
+    def n(self):
+        return self.matrix.shape[0]
+
+    def has(self, word):
+        return word in self.word_map
+
+    def get_all_word_vectors(self):
+        return (self.matrix.toarray(), self.word_map)
+
+    def get_word_vector(self, word):
+        if word in self.word_map:
+            return self.matrix[self.word_map[word],:].toarray()
+        else:
+            return None
+
+    def iter_words(self):
+        for word in self.word_map:
+            yield (word, self.get_word_vector(word))
 
 class RandomDictionary(object):
 

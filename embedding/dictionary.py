@@ -24,14 +24,19 @@ __all__ = [
     "RiDictionary",
     "PmiRiDictionary",
     "W2vDictionary",
-    "RandomDictionary"
+    "RandomDictionary",
+    "StaticDictionary"
 ]
 
 WordMeta = namedtuple("WordMeta", "idx dict_idx focus_count context_count")
 
 class RiDictionary(object):
 
-    def __init__(self, path, words_to_load=None, normalize=True):
+    """
+     A Random Indexing Dictionary
+    """
+
+    def __init__(self, path, words_to_include=None, normalize=True):
 
         self.d = int(path.split("/")[-1].split("-")[2])
         self.k = int(path.split("/")[-1].split("-")[3])
@@ -41,12 +46,12 @@ class RiDictionary(object):
 
         sys.stdout.write("Loading word meta data...")
 
-        if words_to_load is not None: words_to_load = set(words_to_load) # Convert to set for speed
+        if words_to_include is not None: words_to_include = set(words_to_include) # Convert to set for speed
         idx = 0
         dict_idx = 0
         for line in open(path + ".map", 'r'):
             splitted = line.split("\t")
-            if words_to_load is None or (words_to_load is not None and splitted[0] in words_to_load):
+            if words_to_include is None or (words_to_include is not None and splitted[0] in words_to_include):
                 self.word_map[splitted[0]] = WordMeta(idx, dict_idx, int(splitted[1]), int(splitted[2]))
                 dict_idx += 1
             idx += 1
@@ -97,15 +102,19 @@ class RiDictionary(object):
 
 class PmiRiDictionary(RiDictionary):
 
-    def __init__(self, filepathprefix, epsilon, words_to_load=None, use_true_counts=False, normalize=False, cachefile=None):
-        super(PmiRiDictionary, self).__init__(filepathprefix, words_to_load, normalize=False)
+    """
+     A Pointwise-mutal-information transformed Random Indexing Dictionary
+    """
+
+    def __init__(self, filepathprefix, epsilon, words_to_include=None, use_true_counts=False, normalize=False):
+        super(PmiRiDictionary, self).__init__(filepathprefix, words_to_include, normalize=False)
         self.epsilon = epsilon
         self.normalize = normalize
         self.filepathprefix = filepathprefix
-        self.cache = {} if cachefile is None else pickle.load(open(cachefile))
+        self.cache = {}
 
         # Build sparse index vector matrix
-        print "Loads index vectors...\n"
+        print "Loads index vectors..."
         if os.path.isfile(filepathprefix + ".index.pkl"):
             (self.R, self.context_counts) = pickle.load(open(filepathprefix + ".index.pkl"))
         else:
@@ -158,11 +167,11 @@ class PmiRiDictionary(RiDictionary):
 
         return self.cache[word]
 
-    def save_cache(self):
-        pickle.dump(self.cache, open(self.filepathprefix + ".context.cache.pkl", "w"))
-
 class W2vDictionary(object):
 
+    """
+     A Dictionary that loads word embeddings from a binary word2vec dump
+    """
 
     def __init__(self, path, words_to_load=None):
 
@@ -217,24 +226,17 @@ class W2vDictionary(object):
 
 class RandomDictionary(object):
 
-    def __init__(self, path, words_to_load=None):
-        self.d = int(path.split("/")[-1].split("-")[2])
-        self.k = int(path.split("/")[-1].split("-")[3])
-        self.binary_len = np.dtype('float32').itemsize * self.d
+    """
+     A Dictionary that randomizes the embeddings from a standard normal distribution
+    """
 
-        if words_to_load is not None:
+    def __init__(self, d, words_to_load=None):
+        self.d = d
+
+        if words_to_load is not None and type(words_to_load) is not set:
             words_to_load = set(words_to_load) # Convert to set for speed
-            self.locked = True
-        else:
-            self.locked = False
 
-        idx = 0
         self.word_map = {}
-        for line in open(path + ".map", 'r'):
-            splitted = line.split("\t")
-            if words_to_load is not None and splitted[0] in words_to_load:
-                self.word_map[splitted[0]] = np.random.randn(self.d).astype('float32')
-                idx += 1
 
     @property
     def n(self):
@@ -244,7 +246,7 @@ class RandomDictionary(object):
         return word in self.word_map
 
     def get_word_vector(self, word):
-        if word not in self.word_map and not self.locked:
+        if word not in self.word_map:
             self.word_map[word] = np.random.randn(self.d)
 
         return self.word_map[word] if word in self.word_map else None
@@ -259,3 +261,39 @@ class RandomDictionary(object):
             i += 1
 
         return (mtx, ord_dict)
+
+class StaticDictionary(object):
+
+    """
+     A Dictionary that loads embeddings from an earlier dump of any Dictionary type
+    """
+
+    def __init__(self, file_to_load):
+
+        print "Loading static embeddings: " + file_to_load.split("/")[-1]
+        (self.word_vectors, self.word_map) = pickle.load(open(file_to_load))
+
+    @property
+    def d(self):
+        return self.word_vectors.shape[1]
+
+    def has(self, word):
+        return word in self.word_map
+
+    def get_word_vector(self, word):
+        if word in self.word_map:
+            return self.word_vectors[self.word_map[word],:]
+        else:
+            return None
+
+    def get_all_word_vectors(self):
+        return (self.word_vectors, self.word_map)
+
+    def iter_words(self):
+        for word in self.word_map:
+            yield (word, self.get_word_vector(word))
+
+# --- Helper functions ---------------------------------------
+
+def dump(dictionary_object, file_path):
+    pickle.dump(dictionary_object.get_all_word_vectors(), open(file_path, mode="w"))

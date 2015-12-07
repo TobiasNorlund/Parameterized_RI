@@ -25,3 +25,4 @@ from dictionary_embedding import DictionaryEmbedding
 from attention_ri import AttentionRiEmbedding
 
 from dictionary import *
+import dictionary

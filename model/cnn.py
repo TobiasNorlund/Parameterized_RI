@@ -5,8 +5,8 @@ from random import shuffle
 
 class CNN(object):
 
-    def __init__(self):
-        pass
+    def __init__(self, n_epochs=25):
+        self.n_epochs = n_epochs
 
     def evaluate(self, embedding, dataset):
         """
@@ -46,7 +46,7 @@ class CNN(object):
                                                  conv_non_linear="relu",
                                                  hidden_units=[100,2],
                                                  shuffle_batch=True,
-                                                 n_epochs=25,
+                                                 n_epochs=self.n_epochs,
                                                  sqr_norm_lim=9,
                                                  non_static=False,
                                                  batch_size=50,

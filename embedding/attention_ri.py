@@ -6,7 +6,7 @@ from dictionary import RiDictionary
 class AttentionRiEmbedding(object):
     
     def __init__(self, dict_path, words_to_load=None):
-        self.dictionary = RiDictionary(dict_path, words_to_load=words_to_load)
+        self.dictionary = RiDictionary(dict_path, words_to_include=words_to_load)
         
         # Init thetas to ones
         self.thetas = np.ones((self.dictionary.n, self.dictionary.k*2), dtype="float32")

@@ -29,7 +29,7 @@ class CNN(object):
         test_set = zip(*test_data)
 
         longest_doc = 0
-        for (doc, y) in train_set + validation_set:
+        for (doc, y) in train_set + validation_set + test_set:
             l = len(doc.split(" "))
             if l>longest_doc: longest_doc = l
 

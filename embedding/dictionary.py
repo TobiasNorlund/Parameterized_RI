@@ -72,7 +72,7 @@ class RiDictionary(object):
     def get_word_vector(self, word):
         ctx = self.get_context(word)
         if ctx is not None:
-            return ctx.sum(0)
+            return np.nan_to_num(ctx.sum(0))
         else:
             return None
 

@@ -6,31 +6,35 @@ import lasagne
 import theano
 import theano.tensor as T
 
+from lasagne.regularization import regularize_layer_params_weighted, l2
+
 class MLP(object):
 
     def __init__(self, num_epochs=100):
         self.num_epochs = num_epochs
 
-    def evaluate(self, embedding, dataset):
+    def evaluate(self, embedding, train_data, validation_data, num_classes):
 
         """
 
-        Evaluates the 'embedding' using a neural network model on 'dataset'
+        Evaluates the 'embedding' using a neural network model on a training and validation dataset
 
 
         Parameters
         ----------
-        embedding : An embedding which implements the Embedding interface
-        dataset   : A dataset which implements the Dataset interface
-
-        Returns   : A float, with the top accuracy achieved
+        embedding      :     An embedding which implements the Embedding interface
+        train_data     ;     A tuple of lists (docs, y) that constitutes the training data
+        validation_data:     A tuple of lists (docs, y) that constitutes the validation data
+        Returns        :     A float, with the top validation accuracy achieved
         -------
 
         """
 
-        # Load dataset
-        (input_docs, Y) = dataset.load()
-        (input_docs_train, input_docs_test, Y_train, Y_test) = model.train_test_split(input_docs, Y, test_size=0.33)
+        # The data
+        input_docs_train = train_data[0]
+        input_docs_val = validation_data[0]
+        Y_train = train_data[1]
+        Y_val = validation_data[1]
 
         # Fetch embeddings expression and represent the document as a sum of the words
         embeddings_var = embedding.get_embeddings_expr()
@@ -42,7 +46,7 @@ class MLP(object):
         # Build model using lasagne
         l_in = lasagne.layers.InputLayer((1, embedding.d), doc_var)
         l_hid = lasagne.layers.DenseLayer(l_in, num_units=120, nonlinearity=lasagne.nonlinearities.sigmoid)
-        l_out = lasagne.layers.DenseLayer(l_hid, num_units=dataset.num_classes,
+        l_out = lasagne.layers.DenseLayer(l_hid, num_units=1,
                                           nonlinearity=lasagne.nonlinearities.sigmoid)
         # TODO: support multiclass
 
@@ -77,6 +81,11 @@ class MLP(object):
                 yield input_docs[excerpt], Y[excerpt]
 
         ## Perform the training
+        patience = 8  # minimum epochs
+        patience_increase = 2     # wait this much longer when a new best is found
+        best_validation_loss = np.inf
+        best_validation_acc = 0.0
+        improvement_threshold = 0.999  # a relative improvement of this much is considered significant
         print("Starting training...")
         for epoch in range(self.num_epochs):
 
@@ -103,20 +112,33 @@ class MLP(object):
             val_err = 0
             val_acc = 0
             val_count = 0
-            for doc, y in iterate_training_data(input_docs_test, Y_test, shuffle=False):
+            for doc, y in iterate_training_data(input_docs_val, Y_val, shuffle=False):
 
                 words = doc.split(" ")
                 if not any([embedding.has(word) for word in words]): continue # If no embeddings, skip this doc
 
-                val_err, acc = val_fn(y, *embedding.get_variables(words))
+                err, acc = val_fn(y, *embedding.get_variables(words))
+                val_err += err
                 val_acc += acc
                 val_count += 1
 
             # Then we print the results for this epoch:
             sys.stdout.write("\r" + "Epoch {} of {} took {:.3f}s \n".format(
                 epoch + 1, self.num_epochs, time.time() - start_time))
-            print("  training loss:\t\t{:.6f}".format(train_err / train_count))
-            print("  validation loss:\t\t{:.6f}".format(val_err / val_count))
             print("  training accuracy:\t\t{:.2f} %".format( train_acc / train_count * 100))
             print("  validation accuracy:\t\t{:.2f} %".format( val_acc / val_count * 100))
 
+            # Early stopping, if validation accuracy starts to decrease we stop
+            if val_err < best_validation_loss:
+
+                # improve patience if loss improvement is good enough
+                if val_err < best_validation_loss * improvement_threshold:
+                    patience = max(patience, epoch * patience_increase)
+
+                best_validation_loss = val_err
+                best_validation_acc = val_acc / val_count
+
+            if patience <= epoch:
+                break
+
+        return best_validation_acc

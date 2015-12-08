@@ -25,8 +25,7 @@ class DictionaryEmbedding(object):
         self.idxs_var = T.ivector("word_idxs")
 
         self.variables = [self.idxs_var]
-        self.update_parameters = [self.words] if enable_embedding_update else []
-        self.parameters = [self.words] if not enable_embedding_update else []
+        self.update_parameters = [self.words_var] if enable_embedding_update else []
 
     @property
     def d(self):

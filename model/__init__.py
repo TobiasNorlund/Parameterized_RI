@@ -5,14 +5,15 @@
 
   Model interface :
 
-    evaluate(embedding, dataset)    : Evaluate the embeddings on the dataset using this model
+    evaluate(embedding, train_data, validation_data)    : Trains and validates the embeddings on the train and val data
+                                                          using this model
 
 """
 
 from mlp import MLP
 from cnn import CNN
 
-# ------ Define helper functiona --------
+# ------ Define helper functions --------
 
 def train_test_split(X,Y, test_size):
     assert len(X) == len(Y)

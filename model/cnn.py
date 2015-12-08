@@ -1,44 +1,40 @@
 import sys
 sys.path.insert(0, 'CNN_sentence/')
 import conv_net_sentence
-from random import shuffle
 
 class CNN(object):
 
     def __init__(self, n_epochs=25):
         self.n_epochs = n_epochs
 
-    def evaluate(self, embedding, dataset):
+    def evaluate(self, embedding, train_data, validation_data, num_classes):
         """
 
         Evaluates the 'embedding' using a convolutional neural network for NLP (from Yoon Kim [2014]) on 'dataset'
 
         Parameters
         ----------
-        embedding : An embedding which implements the Embedding interface
-        dataset   : A dataset which implements the Dataset interface
+        embedding      :     An embedding which implements the Embedding interface
+        train_data     ;     A tuple of lists (docs, y) that constitutes the training data
+        validation_data:     A tuple of lists (docs, y) that constitutes the validation data
 
-        Returns   : A float, with the top accuracy achieved
+        Returns        :     A float, with the top accuracy achieved
         -------
 
         """
 
         # Load dataset
-        (input_docs, Y) = dataset.load()
-        ds = []
-        longest_doc = 0
-        for i in range(len(input_docs)):
-            ds.append((input_docs[i],  Y[i]))
-            l = len(input_docs[i].split(" "))
-            if l>longest_doc: longest_doc = l
-        shuffle(ds)
+        train_set = zip(*train_data)
+        validation_set = zip(*validation_data)
 
-        test_split = 0.33
-        test_set = ds[:int(test_split*len(ds))]
-        train_set = ds[int(test_split*len(ds)):]
+        longest_doc = 0
+        for (doc, y) in train_set + validation_data:
+            l = len(doc.split(" "))
+            if l>longest_doc: longest_doc = l
+
 
         # Train CNN
-        perf = conv_net_sentence.train_conv_net(datasets=(train_set, test_set),
+        perf = conv_net_sentence.train_conv_net(datasets=(train_set, validation_set),
                                                  embedding=embedding,
                                                  longest_doc=longest_doc,
                                                  lr_decay=0.95,

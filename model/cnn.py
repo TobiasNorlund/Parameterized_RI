@@ -7,7 +7,7 @@ class CNN(object):
     def __init__(self, n_epochs=25):
         self.n_epochs = n_epochs
 
-    def evaluate(self, embedding, train_data, validation_data, num_classes):
+    def evaluate(self, embedding, train_data, validation_data, test_data, num_classes):
         """
 
         Evaluates the 'embedding' using a convolutional neural network for NLP (from Yoon Kim [2014]) on 'dataset'
@@ -26,6 +26,7 @@ class CNN(object):
         # Load dataset
         train_set = zip(*train_data)
         validation_set = zip(*validation_data)
+        test_set = zip(*test_data)
 
         longest_doc = 0
         for (doc, y) in train_set + validation_set:
@@ -34,7 +35,7 @@ class CNN(object):
 
 
         # Train CNN
-        perf = conv_net_sentence.train_conv_net(datasets=(train_set, validation_set),
+        perf = conv_net_sentence.train_conv_net(datasets=(train_set, validation_set, test_set),
                                                  embedding=embedding,
                                                  longest_doc=longest_doc,
                                                  lr_decay=0.95,

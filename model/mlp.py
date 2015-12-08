@@ -13,7 +13,7 @@ class MLP(object):
     def __init__(self, num_epochs=100):
         self.num_epochs = num_epochs
 
-    def evaluate(self, embedding, train_data, validation_data, num_classes):
+    def evaluate(self, embedding, train_data, validation_data, test_data, num_classes):
 
         """
 
@@ -25,6 +25,7 @@ class MLP(object):
         embedding      :     An embedding which implements the Embedding interface
         train_data     ;     A tuple of lists (docs, y) that constitutes the training data
         validation_data:     A tuple of lists (docs, y) that constitutes the validation data
+        test_data      :     A tuple of lists (docs, y) that constitutes the test data
         Returns        :     A float, with the top validation accuracy achieved
         -------
 
@@ -33,8 +34,10 @@ class MLP(object):
         # The data
         input_docs_train = train_data[0]
         input_docs_val = validation_data[0]
+        input_docs_test = test_data[0]
         Y_train = train_data[1]
         Y_val = validation_data[1]
+        Y_test = test_data[1]
 
         # Fetch embeddings expression and represent the document as a sum of the words
         embeddings_var = embedding.get_embeddings_expr()
@@ -70,7 +73,7 @@ class MLP(object):
         val_fn = theano.function([target_var] + embedding.get_variable_vars(), [loss, test_acc])
 
         # Helper function for iterating the training set
-        def iterate_training_data(input_docs, Y, shuffle=True):
+        def iterate_data(input_docs, Y, shuffle=True):
             assert len(input_docs) == len(Y)
             if shuffle:
                 indices = np.arange(len(input_docs))
@@ -84,7 +87,7 @@ class MLP(object):
         patience = 8  # minimum epochs
         patience_increase = 2     # wait this much longer when a new best is found
         best_validation_loss = np.inf
-        best_validation_acc = 0.0
+        best_test_acc = 0.0
         improvement_threshold = 0.999  # a relative improvement of this much is considered significant
         print("Starting training...")
         for epoch in range(self.num_epochs):
@@ -96,7 +99,7 @@ class MLP(object):
             train_err = 0
             train_acc = 0
             train_count = 0
-            for doc, y in iterate_training_data(input_docs_train, Y_train, shuffle=False):
+            for doc, y in iterate_data(input_docs_train, Y_train, shuffle=False):
 
                 words = doc.split(" ")
                 if not any([embedding.has(word) for word in words]): continue # If no embeddings, skip this doc
@@ -112,7 +115,7 @@ class MLP(object):
             val_err = 0
             val_acc = 0
             val_count = 0
-            for doc, y in iterate_training_data(input_docs_val, Y_val, shuffle=False):
+            for doc, y in iterate_data(input_docs_val, Y_val, shuffle=False):
 
                 words = doc.split(" ")
                 if not any([embedding.has(word) for word in words]): continue # If no embeddings, skip this doc
@@ -135,10 +138,25 @@ class MLP(object):
                 if val_err < best_validation_loss * improvement_threshold:
                     patience = max(patience, epoch * patience_increase)
 
+                # We have a new peak validation accuracy, evaluate on test set
                 best_validation_loss = val_err
-                best_validation_acc = val_acc / val_count
+                test_err = 0
+                test_acc = 0
+                test_count = 0
+                for doc, y in iterate_data(input_docs_test, Y_test, shuffle=False):
+
+                    words = doc.split(" ")
+                    if not any([embedding.has(word) for word in words]): continue # If no embeddings, skip this doc
+
+                    err, acc = val_fn(y, *embedding.get_variables(words))
+                    test_err += err
+                    test_acc += acc
+                    test_count += 1
+
+                best_test_acc = test_acc / test_count
+                print("  test accuracy:\t\t\t{:.2f} %".format( best_test_acc * 100))
 
             if patience <= epoch:
                 break
 
-        return best_validation_acc
+        return best_test_acc

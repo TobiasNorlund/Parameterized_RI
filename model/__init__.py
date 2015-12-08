@@ -5,8 +5,8 @@
 
   Model interface :
 
-    evaluate(embedding, train_data, validation_data)    : Trains and validates the embeddings on the train and val data
-                                                          using this model
+    evaluate(embedding, train_data, validation_data, test_data, num_classes)
+                : Trains and validates the embeddings on the train, val and test data using this model
 
 """
 

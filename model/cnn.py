@@ -49,3 +49,5 @@ class CNN(object):
                                                  batch_size=50,
                                                  dropout_rate=[0.5])
         print "perf: " + str(perf)
+
+        return perf

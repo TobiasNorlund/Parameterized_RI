@@ -86,7 +86,7 @@ class MLP(object):
         ## Perform the training
         patience = 8  # minimum epochs
         patience_increase = 2     # wait this much longer when a new best is found
-        best_validation_loss = np.inf
+        best_validation_loss = 0
         best_test_acc = 0.0
         improvement_threshold = 0.999  # a relative improvement of this much is considered significant
         print("Starting training...")
@@ -132,14 +132,14 @@ class MLP(object):
             print("  validation accuracy:\t\t{:.2f} %".format( val_acc / val_count * 100))
 
             # Early stopping, if validation accuracy starts to decrease we stop
-            if val_err < best_validation_loss:
+            if val_acc > best_validation_loss:
 
                 # improve patience if loss improvement is good enough
-                if val_err < best_validation_loss * improvement_threshold:
+                if val_acc > best_validation_loss * 1.0/improvement_threshold:
                     patience = max(patience, epoch * patience_increase)
 
                 # We have a new peak validation accuracy, evaluate on test set
-                best_validation_loss = val_err
+                best_validation_loss = val_acc
                 test_err = 0
                 test_acc = 0
                 test_count = 0

@@ -278,7 +278,7 @@ class RandomDictionary(object):
     """
 
     def __init__(self, d, words_to_load=None):
-        self.d = d
+        self._d = d
         self.word_map = {}
 
         if words_to_load is not None:
@@ -286,6 +286,9 @@ class RandomDictionary(object):
             for word in words_to_load:
                 self.get_word_vector(word)
 
+    @property
+    def d(self):
+        return self._d
 
     @property
     def n(self):
@@ -296,7 +299,7 @@ class RandomDictionary(object):
 
     def get_word_vector(self, word):
         if word not in self.word_map:
-            self.word_map[word] = np.random.randn(self.d)
+            self.word_map[word] = np.random.uniform(-0.25,0.25,self.d)
 
         return self.word_map[word] if word in self.word_map else None
 

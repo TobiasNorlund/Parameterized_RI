@@ -279,11 +279,13 @@ class RandomDictionary(object):
 
     def __init__(self, d, words_to_load=None):
         self.d = d
-
-        if words_to_load is not None and type(words_to_load) is not set:
-            words_to_load = set(words_to_load) # Convert to set for speed
-
         self.word_map = {}
+
+        if words_to_load is not None:
+            if type(words_to_load) is not set: words_to_load = set(words_to_load) # Convert to set for speed
+            for word in words_to_load:
+                self.get_word_vector(word)
+
 
     @property
     def n(self):

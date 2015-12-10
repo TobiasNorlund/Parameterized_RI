@@ -52,3 +52,6 @@ class AttentionRiEmbedding(object):
 
     def get_update_parameter_vars(self):
         return [self.thetas_var]
+        
+    def reset(self):
+        self.thetas_var.set_value(np.ones((self.dictionary.n, self.dictionary.k*2), dtype="float32"))

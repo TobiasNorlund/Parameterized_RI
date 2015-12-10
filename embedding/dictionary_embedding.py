@@ -75,3 +75,13 @@ class DictionaryEmbedding(object):
 
     def get_update_parameter_vars(self):
         return self.update_parameters
+        
+    def reset(self):
+        (self.words, self.word_map) = self.dictionary.get_all_word_vectors()
+
+        # Add zero word "##zero##"
+        self.words = np.vstack((self.words, np.zeros(self.d, dtype="float32")))
+        self.word_map["##zero##"] = self.words.shape[0]-1
+
+        # Theano variables
+        self.words_var.set_value(self.words)

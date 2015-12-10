@@ -56,6 +56,7 @@ class MLP(object):
         # Create a loss expression for training, i.e., a scalar objective we want
         # to minimize
         prediction = lasagne.layers.get_output(l_out)
+        prediction = T.clip(prediction, 1e-7, 1.0 - 1e-7) # Clip to prevent zero error, which causes nan
         loss = lasagne.objectives.binary_crossentropy(prediction, target_var).mean()
 
         # Create update expression for training
@@ -154,7 +155,7 @@ class MLP(object):
                     test_count += 1
 
                 best_test_acc = test_acc / test_count
-                print("  test accuracy:\t\t\t{:.2f} %".format( best_test_acc * 100))
+                print("  test accuracy:\t\t{:.2f} %".format( best_test_acc * 100))
 
             if patience <= epoch:
                 break

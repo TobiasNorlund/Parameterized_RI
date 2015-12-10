@@ -25,6 +25,7 @@ __all__ = [
     "PmiRiDictionary",
     "W2vDictionary",
     "PyDsmDictionary",
+    "BowDictionary",
     "RandomDictionary",
     "StaticDictionary"
 ]
@@ -313,6 +314,41 @@ class RandomDictionary(object):
             i += 1
 
         return (mtx, ord_dict)
+
+class BowDictionary(object):
+
+    def __init__(self, words_to_include):
+
+        self.word_vectors = np.diag(np.ones(len(words_to_include), dtype="float32"))
+        self.word_map = OrderedDict()
+        i = 0
+        for word in words_to_include:
+            self.word_map[word] = i
+            i += 1
+
+    @property
+    def d(self):
+        return self.word_vectors.shape[1]
+
+    @property
+    def n(self):
+        return self.word_vectors.shape[0]
+
+    def has(self, word):
+        return word in self.word_map
+
+    def get_word_vector(self, word):
+        if word in self.word_map:
+            return self.word_vectors[self.word_map[word],:]
+        else:
+            return None
+
+    def get_all_word_vectors(self):
+        return (self.word_vectors, self.word_map)
+
+    def iter_words(self):
+        for word in self.word_map:
+            yield (word, self.get_word_vector(word))
 
 class StaticDictionary(object):
 

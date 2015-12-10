@@ -36,13 +36,16 @@ for emb in embeddings:
     for ds in dss:
       res = {}
       sys.argv = ["run.py", emb, mdl, ds]
-      execfile("run.py", res)
+      try:
+          execfile("run.py", res)
       
-      results.append((emb + " " + mdl + " " + ds, np.mean(res["accuracies"])*100, np.std(res["accuracies"])*100))
+          results.append((emb + " " + mdl + " " + ds, np.mean(res["accuracies"])*100, np.std(res["accuracies"])*100))
 
-      # Write result to file
-      f_res.write("{}: {:.2f}% +- {:.2f}%\n".format(emb + " " + mdl + " " + ds, np.mean(res["accuracies"])*100, np.std(res["accuracies"])*100))
-      f_res.flush()
+          # Write result to file
+          f_res.write("{}: {:.2f}% +- {:.2f}%\n".format(emb + " " + mdl + " " + ds, np.mean(res["accuracies"])*100, np.std(res["accuracies"])*100))
+          f_res.flush()
+      except:
+          print "Error running:" + emb + " " + mdl + " " + ds
       
 f_res.close()
 

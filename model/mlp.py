@@ -58,6 +58,9 @@ class MLP(object):
         prediction = lasagne.layers.get_output(l_out)
         prediction = T.clip(prediction, 1e-7, 1.0 - 1e-7) # Clip to prevent zero error, which causes nan
         loss = lasagne.objectives.binary_crossentropy(prediction, target_var).mean()
+        l2_penalty = regularize_layer_params_weighted({l_hid: 0.001, l_out: 0.001}, l2)
+        loss = loss + l2_penalty
+
 
         # Create update expression for training
         params = lasagne.layers.get_all_params(l_out, trainable=True) + embedding.get_update_parameter_vars()

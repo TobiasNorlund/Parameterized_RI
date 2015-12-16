@@ -7,9 +7,9 @@ class AttentionRiEmbedding(object):
     
     def __init__(self, dict_path, words_to_load=None, normalize=True):
         self.dictionary = RiDictionary(dict_path, words_to_include=words_to_load, normalize=normalize)
-        
+
         # Init thetas to ones
-        self.thetas = np.ones((self.dictionary.n, self.dictionary.k*2), dtype="float32")
+        self.thetas = np.ones((self.dictionary.n+1, self.dictionary.k*2), dtype="float32") # +1 for the zero vector
 
         # Create theno variables
         self.contexts_var = T.ftensor3("contexts")
@@ -41,12 +41,18 @@ class AttentionRiEmbedding(object):
         idx = []
         i = 0
         for word in words:
-            context = self.dictionary.get_context(word) 
-            if context is not None:
-                contexts[:,:,i] = context
-                theta_idxs.append(self.dictionary.get_word_meta(word).dict_idx)
+            if word == "##zero##":
+                contexts[:,:,i] = np.zeros((2*self.dictionary.k, self.d), dtype="float32")
+                theta_idxs.append(self.dictionary.n)
                 idx.append(i)
                 i += 1
+            else:
+                context = self.dictionary.get_context(word)
+                if context is not None:
+                    contexts[:,:,i] = context
+                    theta_idxs.append(self.dictionary.get_word_meta(word).dict_idx)
+                    idx.append(i)
+                    i += 1
 
         return [contexts[:,:,0:i], theta_idxs, idx]
 
@@ -54,4 +60,4 @@ class AttentionRiEmbedding(object):
         return [self.thetas_var]
         
     def reset(self):
-        self.thetas_var.set_value(np.ones((self.dictionary.n, self.dictionary.k*2), dtype="float32"))
+        self.thetas_var.set_value(np.ones((self.dictionary.n+1, self.dictionary.k*2), dtype="float32"))

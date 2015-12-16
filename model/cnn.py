@@ -4,8 +4,9 @@ import conv_net_sentence
 
 class CNN(object):
 
-    def __init__(self, n_epochs=25):
+    def __init__(self, n_epochs=25, batch_size=50):
         self.n_epochs = n_epochs
+        self.batch_size = batch_size
 
     def evaluate(self, embedding, train_data, validation_data, test_data, num_classes):
         """
@@ -46,7 +47,7 @@ class CNN(object):
                                                  n_epochs=self.n_epochs,
                                                  sqr_norm_lim=9,
                                                  non_static=False,
-                                                 batch_size=50,
+                                                 batch_size=self.batch_size,
                                                  dropout_rate=[0.5])
         print "perf: " + str(perf)
 

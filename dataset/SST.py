@@ -1,5 +1,6 @@
 import dataset
 import math
+import random
 
 class SST(object):
 
@@ -22,11 +23,19 @@ class SST(object):
         """
 
         f = open(self.folder_path + "/sentences_clean.txt")
+        f_splits = open(self.folder_path + "/datasetSplit.txt")
+        f_splits.readline()
+        train = []
+        val = []
+        test = []
+
         X = []
         Y = []
-
+        idx = 0
         for line in f:
             splitted = line.split("\t")
+            split_split = f_splits.readline().strip().split(",")
+
             if self.clean_string:
                 splitted[0] = dataset.clean_str(splitted[0].strip())
 
@@ -40,6 +49,20 @@ class SST(object):
                 elif float(splitted[1]) > 0.6:
                     X.append(splitted[0])
                     Y.append(1)
+                else: continue
+
+                if split_split[1] == "1":
+                    train.append(idx)
+                elif split_split[1] == "2":
+                    test.append(idx)
+                elif split_split[1] == "3":
+                    val.append(idx)
+                idx += 1
+
+        random.shuffle(train)
+        random.shuffle(val)
+
+        self.splits = ([(train, val)], test)
 
         return (X, Y)
 
@@ -47,3 +70,7 @@ class SST(object):
     def num_classes(self):
         return 1 if not self.fine_grained_classes else 5
         # TODO: Should be 2 instead of 1
+
+    def get_splits(self):
+
+        return self.splits

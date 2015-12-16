@@ -264,7 +264,7 @@ class PyDsmDictionary(object):
 
     def get_word_vector(self, word):
         if word in self.word_map:
-            return self.matrix[self.word_map[word],:].toarray()
+            return self.matrix[self.word_map[word],:].toarray().flatten()
         else:
             return None
 

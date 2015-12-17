@@ -67,8 +67,8 @@ class PL05(object):
             idxs = range(self.n)
             shuffle(idxs)
 
-            train_val = idxs[:int(0.25*self.n)]
-            test = idxs[int(0.25*self.n):]
+            train_val = idxs[:int(0.75*self.n)]
+            test = idxs[int(0.75*self.n):]
 
             kf = KFold(len(train_val), n_folds=5, shuffle=True)
 

@@ -272,6 +272,17 @@ class PyDsmDictionary(object):
         for word in self.word_map:
             yield (word, self.get_word_vector(word))
 
+class GloVeDictionary(object):
+
+    """
+     A Dictionary that loads vectors from GloVe output files
+    """
+
+    def __init__(self, file_to_load, words_to_include=None):
+
+
+
+
 class RandomDictionary(object):
 
     """

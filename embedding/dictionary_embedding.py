@@ -21,7 +21,7 @@ class DictionaryEmbedding(object):
         print "Total words: " + str(self.words.shape[0])
 
         # Theano variables
-        self.words_var = theano.shared(self.words, "words")
+        self.words_var = theano.shared(self.words, "Words")
         self.idxs_var = T.ivector("word_idxs")
 
         self.variables = [self.idxs_var]

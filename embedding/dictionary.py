@@ -25,6 +25,7 @@ __all__ = [
     "PmiRiDictionary",
     "W2vDictionary",
     "PyDsmDictionary",
+    "GloVeDictionary",
     "BowDictionary",
     "RandomDictionary",
     "StaticDictionary"
@@ -280,8 +281,50 @@ class GloVeDictionary(object):
 
     def __init__(self, file_to_load, words_to_include=None):
 
+        if words_to_include is None:
+            # Find out total no of words by counting lines in txt file
+            with open(file_to_load) as f:
+                for i, l in enumerate(f):
+                    pass
+            self.n = i+1
+        else:
+            self.n = len(words_to_include)
 
+        # Determine dimensionality d
+        with open(file_to_load) as f:
+            self.d = len(f.readline().split()) -1
 
+        self.word_map = OrderedDict()
+        self.word_vectors = np.empty((self.n, self.d), dtype="float32")
+
+        idx = 0
+        with open(file_to_load) as f:
+            for line in f:
+                line_split = line.split()
+
+                if (words_to_include is not None and line_split[0] in words_to_include) or words_to_include is None:
+                    self.word_map[line_split[0]] = idx
+                    self.word_vectors[idx,:] = np.array(map(float, line_split[1:]))
+                    idx += 1
+
+            if idx < self.n:
+                self.word_vectors = self.word_vectors[:idx,:]
+
+    def has(self, word):
+        return word in self.word_map
+
+    def get_all_word_vectors(self):
+        return (self.word_vectors, self.word_map)
+
+    def get_word_vector(self, word):
+        if word in self.word_map:
+            return self.word_vectors[self.word_map[word],:]
+        else:
+            return None
+
+    def iter_words(self):
+        for word in self.word_map:
+            yield (word, self.get_word_vector(word))
 
 class RandomDictionary(object):
 

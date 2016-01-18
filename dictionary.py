@@ -12,7 +12,7 @@ class RiDictionary(object):
         self.k = int(path.split("/")[-1].split("-")[3])
         self.binary_len = np.dtype('float32').itemsize * self.d
 
-        f_map = open(path + ".map", 'r')
+        f_map = open(path + ".map__", 'r')
         self.lines = f_map.read()
         f_map.close()
 

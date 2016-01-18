@@ -8,7 +8,7 @@ def load_dataset():
     Loads the SimLex dataset
     """
 
-    f = open("/home/tobiasnorlund/Code/Datasets/SimLex/simlex.txt")
+    f = open("/home/tobiasnorlund/Datasets/SimLex/simlex.txt")
 
     X = []
     Y = []
@@ -32,7 +32,7 @@ def train_thetas():
     k = 10
 
     # Open the dictionary to load context vectors form
-    path = "/media/tobiasnorlund/ac861917-9ad7-4905-93e9-ee6ab16360ad/bigdata/Dump/Wikipedia-3000000-2000-10"
+    path = "/media/tobiasnorlund/ac861917-9ad7-4905-93e9-ee6ab16360ad/bigdata/Dump/Wikipedia-3000000-2000-10-60/Wikipedia-3000000-2000-10"
     dictionary = RiDictionary(path)
 
     # Load a dataset to train and validate on

@@ -61,7 +61,6 @@ class MLP(object):
         l2_penalty = regularize_layer_params_weighted({l_hid: 0.001, l_out: 0.001}, l2)
         loss = loss + l2_penalty
 
-
         # Create update expression for training
         params = lasagne.layers.get_all_params(l_out, trainable=True) + embedding.get_update_parameter_vars()
         updates = lasagne.updates.sgd(loss, params, learning_rate=0.01)
@@ -88,7 +87,7 @@ class MLP(object):
                 yield input_docs[excerpt], Y[excerpt]
 
         ## Perform the training
-        patience = 8  # minimum epochs
+        patience = 20  # minimum epochs
         patience_increase = 2     # wait this much longer when a new best is found
         best_validation_loss = 0
         best_test_acc = 0.0

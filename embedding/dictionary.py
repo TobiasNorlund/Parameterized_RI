@@ -1,6 +1,7 @@
 import numpy as np, sys, struct
 import pickle
 import os.path
+import sklearn.preprocessing
 from collections import OrderedDict, namedtuple
 from scipy.sparse import csr_matrix, lil_matrix
 
@@ -176,7 +177,7 @@ class W2vDictionary(object):
      A Dictionary that loads word embeddings from a binary word2vec dump
     """
 
-    def __init__(self, path, words_to_load=None):
+    def __init__(self, path, words_to_load=None, normalize=True):
 
         f = open(path, mode="rb")
         header = f.readline().split(" ") # read header
@@ -205,6 +206,8 @@ class W2vDictionary(object):
             if words_to_load is None or (words_to_load is not None and word in words_to_load):
                 self.word_map[word] = idx
                 self.word_vectors[idx,:] = np.fromstring(vec_raw, dtype='float32')
+                if normalize:
+                    self.word_vectors[idx,:] /= np.linalg.norm(self.word_vectors[idx,:])
                 idx += 1
 
         self.word_vectors = self.word_vectors[:idx,:]
@@ -232,11 +235,11 @@ class PyDsmDictionary(object):
     A dictionary that uses pydsm and loads a .pydsm file
     """
 
-    def __init__(self, file_to_load, words_to_include=None):
+    def __init__(self, file_to_load, words_to_include=None, normalize=True):
         import bz2
         print("Loading '" + file_to_load + "' pickled from pydsm...")
         (self.matrix, row2word, col2word) = pickle.load(bz2.BZ2File(file_to_load, "rb"))
-        self.matrix = csr_matrix(self.matrix).astype("float32")
+        self.matrix = csr_matrix(self.matrix)
         self.word_map = OrderedDict(zip(row2word,range(len(row2word))))
 
         if words_to_include is not None:
@@ -245,6 +248,9 @@ class PyDsmDictionary(object):
             idxs = [self.word_map[word] for word in words]
 
             self.matrix = self.matrix[idxs,:]
+            if normalize:
+                sklearn.preprocessing.normalize(self.matrix, norm='l2', axis=1, copy=False)
+            self.matrix = self.matrix.astype("float32")
             self.word_map = OrderedDict(zip(words, range(len(words))))
 
         print("\rLoaded!")
@@ -279,7 +285,7 @@ class GloVeDictionary(object):
      A Dictionary that loads vectors from GloVe output files
     """
 
-    def __init__(self, file_to_load, words_to_include=None):
+    def __init__(self, file_to_load, words_to_include=None, normalize=True):
 
         if words_to_include is None:
             # Find out total no of words by counting lines in txt file
@@ -305,10 +311,13 @@ class GloVeDictionary(object):
                 if (words_to_include is not None and line_split[0] in words_to_include) or words_to_include is None:
                     self.word_map[line_split[0]] = idx
                     self.word_vectors[idx,:] = np.array(map(float, line_split[1:]))
+                    if normalize:
+                        self.word_vectors[idx,:] /= np.linalg.norm(self.word_vectors[idx,:])
                     idx += 1
 
             if idx < self.n:
                 self.word_vectors = self.word_vectors[:idx,:]
+                self.n = idx
 
     def has(self, word):
         return word in self.word_map

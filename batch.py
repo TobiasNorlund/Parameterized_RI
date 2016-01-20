@@ -53,7 +53,7 @@ for emb in embeddings:
           results.append((emb + " " + mdl + " " + ds, aggr_acc))
   
           # Write result to file
-          f_res.write("{}: {:.2f}% +- {:.2f}% \t{}\n".format(emb + " " + mdl + " " + ds, np.mean(aggr_acc*100), np.std(aggr_acc*100), aggr_acc))
+          f_res.write("{}: {:.2f}% +- {:.2f}% \t{}\n".format(emb + " " + mdl + " " + ds, 100*np.mean(aggr_acc), 100*np.std(aggr_acc), aggr_acc))
           f_res.flush()
       except:
           print "Error running:" + emb + " " + mdl + " " + ds
@@ -66,6 +66,5 @@ print " RESULTS:"
 print ""
 
 for experiment, aggr_acc in results:
-
-    print "{}: {:.2f}% +- {:.2f}%".format(experiment, np.mean(aggr_acc*100), np.std(aggr_acc*100))
+    print "{}: {:.2f}% +- {:.2f}%".format(experiment, 100*np.mean(aggr_acc), 100*np.std(aggr_acc))
       

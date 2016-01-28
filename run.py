@@ -68,6 +68,11 @@ if emb_str == "RI" or emb_str == "SGD_RI":
     dictionary = embedding.RiDictionary(wikipedia_3000000_2000_2_60,
                                               words_to_include=dataset.get_all_words(ds.load()[0]),
                                               normalize=True)
+    # ... or if you downloaded the dataset-specific pretrained files...
+    #if ds_str == "PL05":
+    #  dictionary = embedding.StaticDictionary(wikipedia_3000000_2000_2_60 + ".PL05-norm.context.pkl")
+    #elif ds_str == "SST":
+    #  dictionary = embedding.StaticDictionary(wikipedia_3000000_2000_2_60 + ".SST-norm.context.pkl")
 
 elif emb_str == "PMI":
     # -- PMI (cached vectors created by pydsm) ---

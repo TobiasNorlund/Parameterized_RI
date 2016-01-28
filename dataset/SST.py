@@ -22,8 +22,8 @@ class SST(object):
             Y = [ 0, 1, 1, 1, 0, 1, 0, ... ]
         """
 
-        f = open(self.folder_path + "/sentences_clean.txt")
-        f_splits = open(self.folder_path + "/datasetSplit.txt")
+        f = open(self.folder_path + "/sst_cleaned.txt")
+        f_splits = open(self.folder_path + "/sst_splits.txt")
         f_splits.readline()
         train = []
         val = []

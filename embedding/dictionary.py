@@ -1,6 +1,7 @@
-import numpy as np, sys, struct
+﻿import numpy as np, sys, struct
 import pickle
 import os.path
+import h5py
 import sklearn.preprocessing
 from collections import OrderedDict, namedtuple
 from scipy.sparse import csr_matrix, lil_matrix
@@ -27,6 +28,7 @@ __all__ = [
     "W2vDictionary",
     "PyDsmDictionary",
     "GloVeDictionary",
+    "Hdf5Dictionary", 
     "BowDictionary",
     "RandomDictionary",
     "StaticDictionary"
@@ -337,6 +339,42 @@ class GloVeDictionary(object):
     def iter_words(self):
         for word in self.word_map:
             yield (word, self.get_word_vector(word))
+
+class Hdf5Dictionary(object):
+
+    """
+    A Dictionary that loads word embeddings from a hdf5 file
+    """
+
+    def __init__(self, filepath, words_to_loads=None):
+        f = h5py.File(filepath + ".hdf5", 'r')
+        self.word_vectors = f["vectors"]
+        self.word_map = pickle.load(open(filepath + ".pkl"))
+
+    @property
+    def d(self):
+        return self.word_vectors.shape[1]
+
+    @property
+    def n(self):
+        return self.word_vectors.shape[0]
+
+    def has(self, word):
+        return word in self.word_map
+    
+    def get_all_word_vectors(self):
+        return (self.word_vectors, self.word_map)
+
+    def get_word_vector(self, word):
+        if word in self.word_map:
+            return self.word_vectors[self.word_map[word],:]
+        else:
+            return None
+
+    def iter_words(self):
+        for word in self.word_map:
+            yield (word, self.get_word_vector(word))
+
 
 class RandomDictionary(object):
 

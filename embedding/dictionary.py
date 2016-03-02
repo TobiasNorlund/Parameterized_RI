@@ -63,6 +63,7 @@ class RiDictionary(object):
         self.n = len(self.word_map)
         if os.path.isfile(path + ".context.bin"):
             self.f_ctx = open(path + ".context.bin", mode="rb")
+            self.cache = {}
         else:
             self.f_ctx = None
             print "WARNING: No context file was found"
@@ -98,9 +99,11 @@ class RiDictionary(object):
 
     def get_context(self, word):
         if word in self.word_map and self.f_ctx is not None:
-            self.f_ctx.seek(self.word_map[word].idx * self.d * 2*self.k * np.dtype('float32').itemsize)
-            ctx = np.reshape(np.fromstring(self.f_ctx.read(self.binary_len*2*self.k), dtype='float32'), newshape=( 2*self.k, self.d) )
-            return ctx if not self.normalize else ctx / np.sqrt(np.sum(np.sum(ctx, 0)**2))
+            if word not in self.cache:
+                self.f_ctx.seek(self.word_map[word].idx * self.d * 2*self.k * np.dtype('float32').itemsize)
+                ctx = np.reshape(np.fromstring(self.f_ctx.read(self.binary_len*2*self.k), dtype='float32'), newshape=( 2*self.k, self.d) )
+                self.cache[word] = ctx if not self.normalize else ctx / np.sqrt(np.sum(np.sum(ctx, 0)**2))
+            return self.cache[word]
         else:
             return None
 

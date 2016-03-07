@@ -346,7 +346,7 @@ class Hdf5Dictionary(object):
     A Dictionary that loads word embeddings from a hdf5 file
     """
 
-    def __init__(self, filepath, words_to_include=None):
+    def __init__(self, filepath, words_to_include=None, normalize=True):
         f = h5py.File(filepath + ".hdf5", 'r')
         all_vectors = f["vectors"]
         all_vectors_map = pickle.load(open(filepath + ".pkl"))
@@ -359,10 +359,12 @@ class Hdf5Dictionary(object):
             for word in words_to_include:
                 if word in all_vectors_map:
                     self.word_vectors[i,:] = all_vectors[all_vectors_map[word],:]
+                    if normalize:
+                        self.word_vectors[i,:] /= np.linalg.norm(self.word_vectors[i,:])
                     self.word_map[word] = i
                     i += 1
         else:
-            self.word_vectors = all_vectors
+            self.word_vectors = all_vectors / np.linalg.norm(all_vectors, axis=1)
             self.word_map = all_vectors_map
 
     @property

@@ -1,4 +1,4 @@
-
+﻿
 """
 
   INITIALIZATION OF 'dataset' PACKAGE
@@ -14,6 +14,7 @@
 
 from PL05 import PL05
 from SST import SST
+from IMDB import IMDB
 
 ## -- Define helper functions -------------------
 
@@ -27,12 +28,12 @@ def get_all_words(docs):
 
     """
 
-    words = []
+    words = set()
     for doc in docs:
         for word in doc.split(" "):
             if word not in words:
-                words.append(word)
-    return set(words)
+                words.add(word)
+    return words
 
 def clean_str(string, TREC=False):
     """

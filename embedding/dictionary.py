@@ -364,7 +364,7 @@ class Hdf5Dictionary(object):
                     self.word_map[word] = i
                     i += 1
         else:
-            self.word_vectors = all_vectors / np.linalg.norm(all_vectors, axis=1)
+            self.word_vectors = all_vectors #/ np.linalg.norm(all_vectors, axis=1) TODO: normalization is not implemented when words_to_include==None
             self.word_map = all_vectors_map
 
     @property

@@ -1,23 +1,28 @@
-__author__ = 'tobiasnorlund'
+﻿__author__ = 'tobiasnorlund'
 
 import numpy as np
 
-def load_dataset():
-
+def load_dataset(path):
     """
-    Loads the SimLex dataset
+    Loads the MEN dataset
     """
 
-    f = open("/home/tobiasnorlund/Datasets/SimLex/simlex.txt")
+    f = open(path)
 
     X = []
     Y = []
     for line in f:
         line_split = line.rstrip('\n').split()
         X.append(line_split[0] + " " + line_split[1])
-        Y.append(float(line_split[2])/10)
+        Y.append(float(line_split[2])/7)
 
     return (X,Y)
+
+def load_elias_dataset():
+    return load_dataset("/tmp/MEN/agreement/elias_men_ratings.txt")
+
+def load_marcos_dataset():
+    return load_dataset("/tmp/MEN/agreement/marcos_men_ratings.txt")
 
 def num_classes():
     return 1
@@ -32,11 +37,11 @@ def train_thetas():
     k = 10
 
     # Open the dictionary to load context vectors form
-    path = "/media/tobiasnorlund/ac861917-9ad7-4905-93e9-ee6ab16360ad/bigdata/Dump/Wikipedia-3000000-2000-10-60/Wikipedia-3000000-2000-10"
+    path = "/media/hugosandelius/ac861917-9ad7-4905-93e9-ee6ab16360ad/bigdata/Dump/Wikipedia-3000000-2000-10-60/Wikipedia-3000000-2000-10"
     dictionary = RiDictionary(path)
 
     # Load a dataset to train and validate on
-    (input_docs, Y) = load_dataset()
+    (input_docs, Y) = load_elias_dataset()
 
     # theta idx mapper
     theta_idx_map = OrderedDict()

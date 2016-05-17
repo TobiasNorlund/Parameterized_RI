@@ -53,6 +53,6 @@ An Embedding implementation supplies the model with a Theano expression of a n-b
 
 ## References
 
-[1]   To be announched ... 
+[1]   Norlund, T., *The Use of Distributional Semantics in Text Classification Models*, 2016, http://www.tobias.norlund.se/portfolio/masters-thesis
 
 [2]   Sahlgren, M.,  *An Introduction to Random Indexing*, 2005

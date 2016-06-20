@@ -14,7 +14,7 @@ The code is written for python 2.7 with the following dependencies:
 1. To run the experiments in the thesis, begin by making sure you have the dependencies installed. 
 2. Clone the repository:
 ```
-git clone https://github.com/tobiasnorlund/Attention_RI.git
+git clone https://github.com/tobiasnorlund/Parameterized_RI.git
 ```
 3. [Download](http://www.tobias.norlund.se/portfolio/masters-thesis/) or build the embeddings you intend to use. 
   * The Random Indexing vectors (RI, SGD_RI, ATT_RI) were generated using http://github.com/tobiasnorlund/CorpusParser.git
